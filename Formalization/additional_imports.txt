@@ -1,0 +1,2 @@
+import qualified Data.Char
+import qualified Data.Bits

@@ -1,0 +1,552 @@
+{-# LANGUAGE DeriveFunctor #-}
+module Main where
+
+import System.Exit (exitSuccess)
+import System.Console.Repline
+import System.Console.Haskeline
+import System.Directory
+import Control.Monad (filterM)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.State.Strict
+import Control.Monad.Except (lift)
+import Data.List (isPrefixOf, isSuffixOf)
+import Data.Default
+import Text.Read (readMaybe)
+import System.IO.Error(tryIOError)
+import Control.Monad.Trans
+
+import TypecheckProgram
+import Names
+import AST
+import ProgramDef
+import Skeleton
+import Prettyprinter.PrettyprinterDefs
+import Prettyprinter.Render
+import Eval
+import LiftComatch
+import InlineMatch
+import InlineOrderCfuns
+import DefuncIII
+import LiftMatch
+import InlineComatch
+import InlineOrderGfuns
+import RefuncIII
+import ParseExpression (parseExpression, parseProgram)
+
+--------------------------------------------------------------------------------
+-- The Repl Monad
+--------------------------------------------------------------------------------
+
+data CommandMode
+  = NormalMode
+  | MultilineExprMode String
+  | MultilineDeclarationMode String
+  
+data ReplState = ReplState
+  {
+    currentProgram      :: Coq_program
+  , commandMode         :: CommandMode
+  , lastLoadedFile      :: Maybe String
+  , prettyPrinterConfig :: PrettyPrinterConfig
+  }
+
+type Repl = HaskelineT (StateT ReplState IO)
+type InnerRepl = StateT ReplState IO
+
+--------------------------------------------------------------------------------
+-- Helper functions for the Repl Monad
+--------------------------------------------------------------------------------
+
+extractFromReplState :: (Monad m, MonadTrans t) => (ReplState -> a) -> t (StateT ReplState m) a
+extractFromReplState = lift . gets
+
+modifyReplState :: (ReplState -> ReplState) -> Repl ()
+modifyReplState f = do replState <- lift get
+                       lift $ put $ f replState
+
+safeRead :: FilePath -> Repl (Maybe String)
+safeRead file = liftIO $ do
+  res <- tryIOError (readFile file)
+  case res of
+    (Left _) -> return Nothing
+    (Right s) -> return $ Just s
+
+putReplStrLn :: String -> Repl ()
+putReplStrLn s = liftIO (putStrLn s)
+
+getCommandMode :: Repl CommandMode
+getCommandMode = extractFromReplState commandMode
+
+getPrettyPrinterConfig :: Repl PrettyPrinterConfig
+getPrettyPrinterConfig = do
+  myprogram <- extractFromReplState currentProgram
+  ppConfig <- extractFromReplState prettyPrinterConfig
+  return (ppConfig { program = myprogram })
+  
+-- | Wrap a Repl () action which should only be executed when in normal mode.
+-- This handles the case when a ":<cmd>" is entered while in multiline mode.
+execIfInNormalMode :: Repl () -> Repl ()
+execIfInNormalMode cmd = do
+  mode <- getCommandMode
+  case mode of
+    NormalMode -> cmd
+    _ -> do
+      putReplStrLn "Aborted multiline input."
+      modifyReplState (\st -> st { commandMode = NormalMode })
+
+getDatatypes :: InnerRepl [TypeName]
+getDatatypes = do
+  program <- gets currentProgram
+  case program of
+    Coq_mkProgram sk _ _ _ _ _ ->
+      case sk of
+        Coq_mkSkeleton dts _ _ _ _ _ _ _ _-> return dts
+
+getCodatatypes :: InnerRepl [TypeName]
+getCodatatypes = do
+  program <- gets currentProgram
+  case program of
+    Coq_mkProgram sk _ _ _ _ _ ->
+      case sk of
+        Coq_mkSkeleton _ _ cdts _ _ _ _ _ _-> return cdts
+
+--------------------------------------------------------------------------------
+-- Possible Commands
+--------------------------------------------------------------------------------
+
+options :: [(String, [String] -> Repl ())]
+options = [
+    ("help",            help)
+  , ("quit",            quit)
+  , ("showprogram",     showProgram)
+  , ("defunctionalize", defunctionalize)
+  , ("refunctionalize", refunctionalize)
+  , ("load",            load)
+  , ("reload",          reload)
+  , ("declare",         declare)
+  , ("step",            stepCmd)
+  , ("set",             set)
+  , ("unset",           unset)
+  ]
+
+--------------------------------------------------------------------------------
+-- :help
+-- 
+-- Show Help
+--------------------------------------------------------------------------------
+
+help :: [String] -> Repl ()
+help _ = putReplStrLn $
+  "Commands available from the prompt: \n\n" ++
+  "<expression>            evaluate the expression\n" ++
+  ":help                   display this list of commands\n" ++
+  ":quit                   exit the repl\n" ++
+  ":showprogram            show all declarations\n" ++
+  ":defunctionalize <x>    defunctionalize the current program\n" ++
+  ":refunctionalize <x>    refunctionalize the current program\n" ++
+  ":load <filename>        load program from file\n" ++
+  ":reload                 reload last sucessfully loaded program\n" ++
+  ":declare                add a declaration to the program\n" ++
+  ":step <n> <expr>       evaluate n steps of expressions in context of the loaded program\n" ++
+  "\n --- Pretty printing options ---\n" ++
+  ":set / :unset [option]  enable / disable prettyprinting option\n" ++
+  "Options:\n" ++
+  " - printNat             print values of Nat as numerals\n" ++
+  " - printDeBruijn        print variables with their deBruijn Index (Debug mode)\n" ++
+  " - printQualifiedNames  print ctors/dtors with their qualified names\n"
+
+--------------------------------------------------------------------------------
+-- :quit
+--
+-- Exit the Program
+--------------------------------------------------------------------------------
+
+quit :: [String] -> Repl ()
+quit _ = execIfInNormalMode $
+  liftIO exitSuccess
+
+--------------------------------------------------------------------------------
+-- :showprogram
+--
+-- Shows the program in the current state
+--------------------------------------------------------------------------------
+
+showProgram :: [String] -> Repl ()
+showProgram _ = execIfInNormalMode $ do
+  prog <- extractFromReplState currentProgram
+  ppConfig <- getPrettyPrinterConfig
+  liftIO $ progToStringANSI (ppConfig {program = prog}) prog
+
+
+--------------------------------------------------------------------------------
+-- :defunctionalize <codatatype>
+--
+-- Defunctionalizes the given codata type
+--------------------------------------------------------------------------------
+
+defuncProg :: TypeName -> Coq_program -> Coq_program
+defuncProg tn = inline_cfuns_to_program . reorder_cfuns . (flip defunctionalize_program tn) . (flip lift_comatch_to_program tn)
+
+-- | Takes one argument and replaces the current Program by its defunctionalized version.
+defunctionalize :: [String] -> Repl ()
+defunctionalize [] = execIfInNormalMode $ putReplStrLn "Defunctionalize needs at least one codatatype parameter"
+defunctionalize (arg:_) = execIfInNormalMode $ do
+  loadedProg <- extractFromReplState currentProgram
+  let newProg = defuncProg arg loadedProg
+  lift $ modify $ \replState -> (replState {currentProgram =  newProg})
+  putReplStrLn "Successfully defunctionalized program!"
+
+--------------------------------------------------------------------------------
+-- :refunctionalize <codatatype>
+--
+-- Refunctionalizes the given data type
+--------------------------------------------------------------------------------
+
+refuncProg :: TypeName -> Coq_program -> Coq_program
+refuncProg tn = inline_gfuns_to_program . reorder_gfuns . (flip refunctionalize_program tn) . (flip lift_match_to_program tn)
+
+-- | Takes one argument and replaces the current Program by its defunctionalized version.
+refunctionalize :: [String] -> Repl ()
+refunctionalize [] = execIfInNormalMode $ putReplStrLn "Refunctionalize needs at least one datatype parameter"
+refunctionalize (arg:_) = execIfInNormalMode $ do
+  loadedProg <- extractFromReplState currentProgram
+  let newProg = refuncProg arg loadedProg 
+  lift $ modify $ \replState -> (replState {currentProgram =  newProg})
+  putReplStrLn "Successfully refunctionalized program!"
+
+--------------------------------------------------------------------------------
+-- :load <filename>
+--
+-- Load the file with the given name from disk.
+-- Parses and typechecks the file.
+--------------------------------------------------------------------------------
+
+load :: [String] -> Repl ()
+load [] = execIfInNormalMode $ putReplStrLn "Load needs a filename parameter"
+load (filepath:_) = execIfInNormalMode $ do
+  mprogstr <- safeRead filepath
+  case mprogstr of
+    Nothing -> putReplStrLn $ "File with name " ++ filepath ++ " does not exist."
+    Just progstr ->
+        case (parseProgram progstr) of
+          Left err -> putReplStrLn $ "Failed at parsing the file:\n" ++ err
+          Right parsedProg -> do
+            let tc_errors = typecheckProgram parsedProg
+            case tc_errors of
+              (([],[]),[]) -> do
+                lift $ modify $ \replState -> replState {currentProgram = parsedProg, lastLoadedFile = Just filepath}
+                putReplStrLn "Successfully loaded program"
+              ((ferrs, gfunerrs), cfunerrs) -> do
+                if null ferrs then return () else do
+                  putReplStrLn $ "Could not typecheck the following functions: "
+                  mapM_ putReplStrLn ferrs
+                if null gfunerrs then return () else do
+                  putReplStrLn $ "Could not typecheck the following generator functions: "
+                  mapM_ putReplStrLn gfunerrs
+                if null cfunerrs then return () else do
+                  putReplStrLn $ "Could not typecheck the following consumer functions: "
+                  mapM_ putReplStrLn cfunerrs
+
+--------------------------------------------------------------------------------
+-- :reload
+--
+-- Takes filename of the last successfully loaded program and reloads that program
+-- from the filesystem.
+--------------------------------------------------------------------------------
+
+reload :: [String] -> Repl ()
+reload _ = execIfInNormalMode $ do
+  lastLoadedFile <- extractFromReplState lastLoadedFile
+  case lastLoadedFile of
+    Nothing -> putReplStrLn "No file has been successfully loaded before"
+    Just filepath -> do
+      mprogstr <- safeRead filepath
+      case mprogstr of
+        Nothing -> putReplStrLn $ "File with name " ++ filepath ++ " does not exist."
+        Just progstr ->
+          case (parseProgram progstr) of
+            Left err -> putReplStrLn $ "Failed at parsing the file:\n" ++ err
+            Right p -> do
+              lift $ modify $ \replState -> replState {currentProgram = p} 
+              putReplStrLn "Successfully reloaded program"
+
+--------------------------------------------------------------------------------
+-- :declare
+--
+-- Add a declaration to the program. Starts multiline declaration mode.
+--------------------------------------------------------------------------------
+
+declare :: [String] -> Repl ()
+declare _ = execIfInNormalMode $
+  modifyReplState (\st -> st { commandMode = MultilineDeclarationMode "" })
+
+--------------------------------------------------------------------------------
+-- :step
+--
+-- Expects two arguments, a max number of steps and an expression to execute.
+--------------------------------------------------------------------------------
+
+-- | Parse the arguments. If successful, pass result to "step" function.
+stepCmd :: [String] -> Repl ()
+stepCmd [] = putReplStrLn ":step expects two arguments."
+stepCmd (s:ss) = do
+  program <- extractFromReplState currentProgram
+  case readMaybe s of
+    Nothing -> putReplStrLn "Could not parse first argument of :step as integer"
+    Just n  -> case parseExpression (program_skeleton program) (concat ss) of
+      Left err -> putReplStrLn err
+      Right e -> step n e
+
+step :: Int -> Coq_expr -> Repl ()
+step n e = do
+  steps <- computeSteps n e
+  printSteps (reverse steps)
+  
+-- | Try to evaluate an expression to normal form, returning all intermediate steps.
+-- Additional parameter is used to indicate the maximal number of steps.
+computeSteps :: Int -> Coq_expr -> Repl [Coq_expr]
+computeSteps n e = do
+  program <- extractFromReplState currentProgram
+  let go n' e acc =
+        if n' <= 0
+        then return acc
+        else if value_b e
+             then return (e:acc)
+             else case one_step_eval program e of
+                    Nothing -> return (e:acc)
+                    Just e' -> go (n' - 1) e' (e:acc)
+  go n e []
+
+-- | Print the list of expressions to console.
+printSteps :: [Coq_expr] -> Repl ()
+printSteps exprs = do
+  ppConfig <- getPrettyPrinterConfig
+  let printStep :: (Int, Coq_expr) -> Repl ()
+      printStep (n,e) = do
+        putReplStrLn $ "STEP " ++ show n
+        liftIO $ exprToStringANSI ppConfig e
+  let numberedExprs = zip [1..] exprs
+  sequence_ (printStep <$> numberedExprs)
+
+--------------------------------------------------------------------------------
+--  :set :unset
+--
+-- Set and unset options.
+--------------------------------------------------------------------------------
+
+setOptions :: [String]
+setOptions =  [ "printNat"
+              , "printDeBruijn"
+              , "printQualifiedNames"
+              ]
+
+set_printNat :: Bool -> ReplState -> ReplState
+set_printNat b rs@(ReplState { prettyPrinterConfig = ppConfig}) = rs {prettyPrinterConfig = (ppConfig { printNat = b })}
+
+set_printDeBruijn :: Bool -> ReplState -> ReplState
+set_printDeBruijn b rs@(ReplState { prettyPrinterConfig = ppConfig}) = rs {prettyPrinterConfig = (ppConfig { printDeBruijn = b })}
+
+set_printQualifiedNames :: Bool -> ReplState -> ReplState
+set_printQualifiedNames b rs@(ReplState { prettyPrinterConfig = ppConfig}) = rs {prettyPrinterConfig = (ppConfig { printQualifiedNames = b })}
+
+set :: [String] -> Repl ()
+set args = do
+  if "printNat" `elem` args then lift $ modify (set_printNat True) else return ()
+  if "printDeBruijn" `elem` args then lift $ modify (set_printDeBruijn True) else return ()
+  if "printQualifiedNames" `elem` args then lift $ modify (set_printQualifiedNames True) else return ()
+
+unset :: [String] -> Repl ()
+unset args = do
+  if "printNat" `elem` args then lift $ modify (set_printNat False) else return ()
+  if "printDeBruijn" `elem` args then lift $ modify (set_printDeBruijn False) else return ()
+  if "printQualifiedNames" `elem` args then lift $ modify (set_printQualifiedNames False) else return ()
+
+--------------------------------------------------------------------------------
+-- Command
+--
+-- Input on the repl not preceded by a colon is passed on to cmd.
+-- cmd tries to parse the string as an expression and evaluates it with
+-- the currently loaded program.
+--------------------------------------------------------------------------------
+
+-- | Dispatch based on current mode of the repl.
+cmd :: String -> Repl ()
+cmd input = do
+  mode <- getCommandMode
+  case mode of
+    NormalMode -> cmdNormalMode input
+    MultilineExprMode akk -> cmdMultilineExprMode akk input
+    MultilineDeclarationMode akk -> cmdMultilineDeclMode akk input
+
+-- | If in normal mode, we try to parse an Expression.
+-- If this fails, we switch to multiline expression input mode.
+cmdNormalMode :: String -> Repl ()
+cmdNormalMode input = do
+  program <- extractFromReplState currentProgram
+  let tryParse = parseExpression (program_skeleton program) input
+  case tryParse of
+    Left _ -> modifyReplState (\st -> st { commandMode = MultilineExprMode input })
+    Right expr -> evalExpr expr
+
+-- | Decide whether multiline input is finished, or whether input should be appended to
+-- accumulated multiline input.
+cmdMultilineExprMode :: String -> String -> Repl ()
+cmdMultilineExprMode akk ";" = do
+  modifyReplState (\st -> st { commandMode = NormalMode })
+  evalMultilineExpr akk
+cmdMultilineExprMode akk input =
+  modifyReplState (\st -> st { commandMode = MultilineExprMode (akk ++ "\n" ++ input) })
+
+-- | Process the accumulated and finished multiline expression input.
+evalMultilineExpr :: String -> Repl ()
+evalMultilineExpr multilineExpr = do
+  program <- extractFromReplState currentProgram
+  let tryParse = parseExpression (program_skeleton program) multilineExpr
+  case tryParse of
+    Left err -> do
+      putReplStrLn "Error while parsing multiline expression:"
+      putReplStrLn err
+      modifyReplState (\st -> st { commandMode = NormalMode })
+    Right expr -> evalExpr expr
+
+-- | Decide whether multiline input is finished, or whether input should be appended to
+-- accumulated multiline input.
+cmdMultilineDeclMode :: String -> String -> Repl ()
+cmdMultilineDeclMode akk ";" = do
+  modifyReplState (\st -> st { commandMode = NormalMode })
+  evalMultilineDecl akk
+cmdMultilineDeclMode akk input  =
+  modifyReplState (\st -> st { commandMode = MultilineDeclarationMode (akk ++ "\n" ++ input) })
+
+-- | Process the accumulated and finished multiline declaration input.
+evalMultilineDecl :: String -> Repl ()
+evalMultilineDecl multilineDecl =
+  putReplStrLn multilineDecl
+
+evalFully :: Coq_program -> Coq_expr -> Maybe Coq_expr
+evalFully p e
+  | value_b e = Just e
+  | otherwise = case one_step_eval p e of
+                  Nothing -> Nothing
+                  Just e' -> evalFully p e'
+
+evalExpr :: Coq_expr -> Repl ()
+evalExpr e = do
+  program <- extractFromReplState currentProgram
+  ppConfig <- getPrettyPrinterConfig
+  let val = evalFully program e
+  putReplStrLn"Parsed input as:"
+  liftIO $ exprToStringANSI ppConfig e
+  putReplStrLn "Evaluates to:"
+  liftIO $ case val of
+    Nothing -> putStrLn "evalFully failed, returning Nothing"
+    Just val' -> exprToStringANSI ppConfig val'
+    
+--------------------------------------------------------------------------------
+-- Tab Completion
+--------------------------------------------------------------------------------
+
+completionlist :: [String]
+completionlist =
+  [ ":help"
+  , ":quit"
+  , ":showprogram"
+  , ":defunctionalize"
+  , ":refunctionalize"
+  , ":load"
+  , ":declare"
+  , ":reload"
+  , ":set"
+  , ":unset"
+  , ":step"
+  ]
+
+completer :: CompleterStyle InnerRepl
+completer = Prefix cmdCompleter prefixCompleters
+  where
+    prefixCompleters =
+      [
+        (":refunctionalize", refuncCompleter)
+      , (":defunctionalize", defuncCompleter)
+      , (":set", setCompleter)
+      , (":unset", setCompleter)
+      , (":load", loadCompleter)
+      ]
+
+mkWordCompleter :: Monad m =>  (String -> m [Completion]) -> CompletionFunc m
+mkWordCompleter = completeWord (Just '\\') " \t()[]"
+
+-- | Just completes commands. e.g. ":showprogram", ":load" etc.
+cmdCompleter :: Monad m => CompletionFunc m
+cmdCompleter = mkWordCompleter (_simpleComplete f)
+  where
+    f n = return $ filter (isPrefixOf n) completionlist
+    _simpleComplete f word = f word >>= return . map simpleCompletion
+
+-- | Completes ":load" commands with "*.ub" files in current directory.
+loadCompleter :: CompletionFunc InnerRepl
+loadCompleter = mkWordCompleter getLoadCompletions
+  where
+    getLoadCompletions s = do
+      directoryContents <- liftIO $ getCurrentDirectory >>= getDirectoryContents
+      filtered <-liftIO $  filterM doesFileExist directoryContents
+      let filtered' = filter (".ub" `isSuffixOf`) filtered
+      let filtered'' = filter (isPrefixOf s) filtered'
+      return $ fmap simpleCompletion filtered''
+      
+-- | Completes ":refunctionalize" commands with available datatypes.
+refuncCompleter :: CompletionFunc InnerRepl
+refuncCompleter = mkWordCompleter getRefuncCompletions
+  where
+    getRefuncCompletions s = do
+      dts <- getDatatypes
+      let filtered = filter (isPrefixOf s) dts
+      return $ fmap simpleCompletion filtered
+
+-- | Completes ":defunctionalize" commands with available codatatypes.
+defuncCompleter :: CompletionFunc InnerRepl
+defuncCompleter = mkWordCompleter getDefuncCompletions
+  where
+    getDefuncCompletions s = do
+      cdts <- getCodatatypes
+      let filtered = filter (isPrefixOf s) cdts
+      return $ fmap simpleCompletion filtered
+
+-- | Completes ":set" and ":unset" commands with available options.
+setCompleter :: CompletionFunc InnerRepl
+setCompleter = mkWordCompleter getSetCompletions
+  where
+    getSetCompletions s = return $ fmap simpleCompletion $ filter (isPrefixOf s) setOptions      
+
+--------------------------------------------------------------------------------
+-- Setting up the Repl
+--------------------------------------------------------------------------------
+
+startState :: ReplState
+startState = ReplState
+  {
+    currentProgram = emptyProgram
+  , commandMode = NormalMode
+  , lastLoadedFile = Nothing
+  , prettyPrinterConfig = def
+  }
+                            
+splashScreen :: Repl ()
+splashScreen = putReplStrLn ""
+
+prompt :: Repl String
+prompt = do
+  lastLoaded <- extractFromReplState lastLoadedFile
+  mode <- getCommandMode
+  let promptPrefix = case lastLoaded of Nothing -> ""; Just fp -> fp
+  case mode of
+    NormalMode -> return $ promptPrefix ++ "> "
+    MultilineExprMode _ -> return $ promptPrefix ++ ": "
+    MultilineDeclarationMode _ -> return $ promptPrefix ++ ": "
+
+repl :: IO ()
+repl = evalStateT (evalRepl prompt cmd options (Just ':') completer splashScreen) startState
+
+main :: IO ()
+main = do
+  repl

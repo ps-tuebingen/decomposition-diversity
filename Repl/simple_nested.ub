@@ -1,0 +1,35 @@
+
+data Bool where
+  True()
+  False()
+data Stream where
+  Simpl()
+  _L1()
+  _L2()
+  _L3()
+
+/* consumer function Stream:D1(()) : Bool := */
+  /* case Simpl() => False() */
+  /* case _L1() => True() */
+  /* case _L2() => False() */
+  /* case _L3() => False() */
+/* consumer function Stream:D2(()) : Bool := */
+  /* case Simpl() => False() */
+  /* case _L1() => False() */
+  /* case _L2() => True() */
+  /* case _L3() => False() */
+/* consumer function Stream:D3(()) : Bool := */
+  /* case Simpl() => False() */
+  /* case _L1() => False() */
+  /* case _L2() => False() */
+  /* case _L3() => True() */
+consumer function Stream:S() : Stream :=
+  case Simpl() => Simpl()
+  case _L1() => _L3()
+  case _L2() => _L1()
+  case _L3() => Simpl()
+consumer function Stream:S2() : Stream :=
+  case Simpl() => _L2()
+  case _L1() => Simpl()
+  case _L2() => Simpl()
+  case _L3() => Simpl()

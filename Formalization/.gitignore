@@ -1,0 +1,9 @@
+docs/
+haskell/
+TAGS
+*.d
+*.dot
+*.png
+*.pdf
+.shake/
+_shake/

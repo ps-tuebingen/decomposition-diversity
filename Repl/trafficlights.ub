@@ -1,0 +1,43 @@
+data Nat where
+   Zero()
+   Succ(Nat)
+
+data Color where
+  Red()
+  Yellow()
+  Green()
+
+data Bool where
+  True()
+  False()
+
+codata TrafficLight where
+  Color() : Color
+  Switch() : TrafficLight
+
+function ifThenElse(b : Bool, t : TrafficLight, e : TrafficLight) : TrafficLight :=
+  match Bool:Ite b using x := t : TrafficLight , y := e : TrafficLight returning TrafficLight with
+    case True() => x
+    case False() => y
+
+consumer function Nat:NthColor(tl : TrafficLight) : Color :=
+  case Zero() => tl.Color()
+  case Succ(y) => let next := tl.Switch()
+                  in y.NthColor(next)
+
+consumer function Nat:Plus(x : Nat) : Nat :=
+  case Zero() => x
+  case Succ(y) => Succ(y.Plus(x))
+
+generator function ConstRed() : TrafficLight :=
+  cocase Color() => Red()
+  cocase Switch() => ConstRed()
+
+generator function RedLight() : TrafficLight :=
+  cocase Color() => Red()
+  cocase Switch() => comatch TrafficLight:GreenLight with
+                         cocase Color() => Green()
+                         cocase Switch() => comatch TrafficLight:YellowLight with
+                                                cocase Color() => Yellow()
+                                                cocase Switch() => RedLight()
+ 

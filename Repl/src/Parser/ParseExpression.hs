@@ -31,3 +31,4 @@ parseProgram str = do
   case parsedDecls of
     Left err -> Left err
     Right decls -> assembleProgram decls
+

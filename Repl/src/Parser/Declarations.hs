@@ -9,10 +9,9 @@ import qualified Text.Megaparsec.Char.Lexer as L
 import qualified Text.Megaparsec.Char as C
 
 import Names (TypeName, ScopedName(..), QName)
-
 import Parser.Definitions
-import Parser.Lexer
 import Parser.Expressions
+import Parser.Lexer
 
 --------------------------------------------------------------------------------
 -- Different kinds of declarations

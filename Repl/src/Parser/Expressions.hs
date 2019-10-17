@@ -4,12 +4,11 @@ module Parser.Expressions
   , parseExpression
   ) where
 
-import Parser.Definitions
-import Parser.Lexer
-
 import Text.Megaparsec ((<|>), try, sepBy, some, eof)
 import qualified Text.Megaparsec.Char.Lexer as L
 
+import Parser.Definitions
+import Parser.Lexer
 import Names (QName)
 
 --------------------------------------------------------------------------------
@@ -26,7 +25,7 @@ usingListP = (try (rword "using") >> (usingDeclP `sepBy` symbol ",")) <|> return
       _ <- symbol ":"
       tn <- typeNameP
       return (var, ex, tn)
-      
+
 --------------------------------------------------------------------------------
 -- Local Match Parser
 --------------------------------------------------------------------------------
@@ -109,7 +108,7 @@ consumerCallP = do
   e1 <- exprP' -- Use exprP' since destructor / consumer function calls are left recursive!
   list <- some $ consumerP
   return (destructorChain e1 (reverse list))
-  
+
 consumerP :: Parser ConsumerCall
 consumerP = do
   _ <- symbol "."
@@ -166,7 +165,7 @@ letP = do
   rword "in"
   exp2 <- exprP
   return (LetP varname exp1 exp2)
-  
+
 -- | Parse an arbitrary expression.
 exprP :: Parser ExprParse
 exprP =
@@ -177,12 +176,12 @@ exprP =
   (try natP) <|>
   (try matchP) <|>
   (try comatchP) <|>
-  (try varExprParseP) 
+  (try varExprParseP)
 
 -- | Parse an expression. Does not parse destructor calls or consumer function calls.
 -- (Since these are left recursive).
 exprP' :: Parser ExprParse
-exprP' = 
+exprP' =
   (try generatorP) <|>
   (try funcallP) <|>
   (try letP) <|>
@@ -202,7 +201,8 @@ exprNoVarP =
   (try matchP) <|>
   (try comatchP)
 
-  
+
 -- | Parse an expression.
 parseExpression :: String -> Either String ExprParse
 parseExpression input = parseInput (exprNoVarP >>= (\e -> eof >> return e)) input
+

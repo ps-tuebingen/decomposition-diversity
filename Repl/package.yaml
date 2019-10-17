@@ -37,6 +37,9 @@ library:
   source-dirs:
     - src
     - extracted
+  ghc-options:
+    - -Wall
+    - -fwarn-tabs
 
 executables:
   Repl-exe:
@@ -51,7 +54,6 @@ executables:
     - -Wno-orphans
     - -Wno-name-shadowing
     - -Wno-unused-binds
-    - -Wno-unused-imports
     dependencies:
     - Repl
 

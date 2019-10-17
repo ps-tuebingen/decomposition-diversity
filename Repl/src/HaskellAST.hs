@@ -1,5 +1,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module HaskellAST where
+module HaskellAST
+  (
+    Expr(..)
+  , ExprNamed
+  , generateName
+  -- DeBruijn to Named
+  , exprDB2exprNamed'
+  , exprDB2exprNamed
+  -- Named to DeBruijn
+  , exprNamed2exprDB
+  , exprNamed2exprDB'
+  , exprDB2CoqExpr
+  , coqExpr2exprDB
+  , lookupArgs
+  , fromToNames
+  ) where
 import Names (VarName, ScopedName, TypeName, QName, Name, ScopedName(..))
 import AST
 import Skeleton

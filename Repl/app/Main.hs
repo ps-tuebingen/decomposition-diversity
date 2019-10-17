@@ -32,7 +32,7 @@ import LiftMatch
 import InlineComatch
 import InlineOrderGfuns
 import RefuncIII
-import Parser.ParseExpression (parseExpression, parseProgram)
+import Parser.Combined (parseExpression, parseProgram)
 
 --------------------------------------------------------------------------------
 -- The Repl Monad

@@ -1,4 +1,4 @@
-module Parser.ParseExpression
+module Parser.Combined
   (
     parseExpression
   , parseProgram

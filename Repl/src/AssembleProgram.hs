@@ -11,6 +11,7 @@ import Parser.ParserDefinition
 import Parser.DeclarationParser
 import Renamer.ParsedToNamed
 import Renamer.DeBruijnToCoq
+import Renamer.NamedToDeBruijn
 import Data.Foldable (foldrM)
 import AssembleSkeleton
 

@@ -7,8 +7,8 @@ module ParseExpression
 import Skeleton
 import AST
 import ProgramDef
-import HaskellAST
 import Renamer.ParsedToNamed
+import Renamer.NamedToDeBruijn
 import Renamer.DeBruijnToCoq
 import Parser.ParserDefinition
 import Parser.ExpressionParser

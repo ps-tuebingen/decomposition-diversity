@@ -1,8 +1,10 @@
 module Parser.ParseExpression
   (
-    Parser.ParseExpression.parseExpression
+    parseExpression
   , parseProgram
   ) where
+
+import Text.Megaparsec (eof)
 
 import Skeleton
 import AST
@@ -15,9 +17,13 @@ import Parser.Expressions
 import Parser.Declarations
 import AssembleProgram
 
+-- | Parse an expression.
+parseExpression' :: String -> Either String ExprParse
+parseExpression' input = parseInput (exprNoVarP >>= (\e -> eof >> return e)) input
+
 parseExpression :: Coq_skeleton -> String -> Either String Coq_expr
 parseExpression sk str = do
-  let parsedStr = Parser.Expressions.parseExpression str
+  let parsedStr = parseExpression' str
   case parsedStr of
     Left err -> Left err
     Right expr -> do

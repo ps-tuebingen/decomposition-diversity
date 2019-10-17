@@ -1,10 +1,10 @@
 module Parser.Expressions
   (
     exprP
-  , parseExpression
+  , exprNoVarP
   ) where
 
-import Text.Megaparsec ((<|>), try, sepBy, some, eof)
+import Text.Megaparsec ((<|>), try, sepBy, some)
 import qualified Text.Megaparsec.Char.Lexer as L
 
 import Parser.Definitions
@@ -200,9 +200,4 @@ exprNoVarP =
   (try natP) <|>
   (try matchP) <|>
   (try comatchP)
-
-
--- | Parse an expression.
-parseExpression :: String -> Either String ExprParse
-parseExpression input = parseInput (exprNoVarP >>= (\e -> eof >> return e)) input
 

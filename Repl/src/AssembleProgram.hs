@@ -9,7 +9,7 @@ import HaskellAST
 import ProgramDef
 import Parser.ParserDefinition
 import Parser.DeclarationParser
-import Renamer
+import Renamer.Renamer
 import Data.Foldable (foldrM)
 import AssembleSkeleton
 

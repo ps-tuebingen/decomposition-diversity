@@ -8,7 +8,7 @@ import Skeleton
 import AST
 import ProgramDef
 import HaskellAST
-import Renamer
+import Renamer.Renamer
 import Parser.ParserDefinition
 import Parser.ExpressionParser
 import Parser.DeclarationParser

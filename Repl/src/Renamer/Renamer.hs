@@ -1,4 +1,4 @@
-module Renamer
+module Renamer.Renamer
   (
     rename
   ) where

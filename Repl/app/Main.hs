@@ -444,7 +444,7 @@ evalExpr e = do
 --------------------------------------------------------------------------------
 
 completionlist :: [String]
-completionlist = fst <$> options
+completionlist = (':':) . fst <$> options
 
 completer :: CompleterStyle InnerRepl
 completer = Prefix cmdCompleter prefixCompleters

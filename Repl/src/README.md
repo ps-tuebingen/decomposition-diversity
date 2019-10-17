@@ -1,3 +1,40 @@
+# Three different representations for Expressions
+
+```
+          ---------------------------
+          |      ExprParse          |
+          ---------------------------
+                          |
+                          | Renamer.ParsedToNamed
+                          |
+                          V
+          ---------------------------
+          |      ExprNamed          |
+          ---------------------------
+                          |  A
+                          |  |
+  Renamer.NamedToDeBruijn |  | Renamer.DeBruijnToNamed
+                          |  |
+                          V  |
+          ---------------------------
+          |      ExprDB             |
+          ---------------------------
+                          |  A
+                          |  |
+  Renamer.CoqToDeBruijn   |  | Renamer.DeBruijnToCoq
+                          |  |
+                          V  |
+          ---------------------------
+          |      Coq_expr           |
+          ---------------------------
+
+```
+
+- `ExprParse` is defined in `Parser/Definitions` and corresponds to expressions just after parsing, when destructors/consumer functions and constructors/generator functions are not yet distinguished.
+- `ExprNamed` is defined in `HaskellAST` and corresponds to `ExprParse` together with the distinction between destructors/consumer functions resp. constructors/generator functions
+- `ExprDB` is defined in `HaskellAST` and corresponds to a version of `ExprNamed` that has been transformed into DeBruijn representation.
+- `Coq_expr` is defined in `extracted/AST.hs` and is the result of extraction from the Coq formalization.
+
 # Parsing
 
 Parsing a file from the disk and returning a Coq_program performs the following steps:

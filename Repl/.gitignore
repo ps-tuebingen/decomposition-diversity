@@ -2,5 +2,6 @@
 uroboro.zip
 docker
 json-client
-.history
 .stack-work/
+stack.yaml.lock
+.history

@@ -1,6 +1,6 @@
-module ParseExpression
+module Parser.ParseExpression
   (
-    ParseExpression.parseExpression
+    Parser.ParseExpression.parseExpression
   , parseProgram
   ) where
 

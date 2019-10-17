@@ -40,6 +40,8 @@ library:
   ghc-options:
     - -Wall
     - -fwarn-tabs
+    - -Wno-name-shadowing
+    - -Wno-orphans
 
 executables:
   Repl-exe:

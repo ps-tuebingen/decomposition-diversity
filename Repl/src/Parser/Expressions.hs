@@ -1,4 +1,4 @@
-module Parser.ExpressionParser
+module Parser.Expressions
   (
     exprP
   , parseExpression

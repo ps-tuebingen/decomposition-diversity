@@ -12,7 +12,7 @@ import Names (TypeName, ScopedName(..), QName)
 
 import Parser.Definitions
 import Parser.Lexer
-import Parser.ExpressionParser
+import Parser.Expressions
 
 --------------------------------------------------------------------------------
 -- Different kinds of declarations

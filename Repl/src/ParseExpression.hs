@@ -11,13 +11,13 @@ import Renamer.ParsedToNamed (parsedToNamed)
 import Renamer.NamedToDeBruijn (namedToDeBruijn)
 import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Parser.Definitions
-import Parser.ExpressionParser
+import Parser.Expressions
 import Parser.Declarations
 import AssembleProgram
 
 parseExpression :: Coq_skeleton -> String -> Either String Coq_expr
 parseExpression sk str = do
-  let parsedStr = Parser.ExpressionParser.parseExpression str
+  let parsedStr = Parser.Expressions.parseExpression str
   case parsedStr of
     Left err -> Left err
     Right expr -> do

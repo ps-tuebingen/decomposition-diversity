@@ -5,7 +5,9 @@
 
 ## Overview of the Formalization
 
-The most important parts of the formalization are contained in the following files.
+The most important parts of the formalization are contained in the following files
+and in the file `Results.v `, which explains how we validated the theorems stated in our paper.
+
 Please note that this file (and the whole formalization) uses the terms de- and
 refunctionalization instead of the terms constructorization and
 destructorization used in the paper.
@@ -24,34 +26,34 @@ Contains definitions and lemmas about equality of names, qualified names and sco
 
 ### Skeleton.v
 
-Contains the definition of the ProgramSkeleton, which is formalized as a dependent record.
-The ProgramSkeleton contains the datatypes and constructors, the codatatypes and destructors, and the signatures of all
+Contains the definition of the `skeleton`, which is formalized as a dependent record.
+The `skeleton` contains the datatypes and constructors, the codatatypes and destructors, and the signatures of all
 functions, generator functions and consumer functions contained in the program.
 
 ```coq
-Record ProgramSkeleton : Type := mkProgramSkeleton {
+Record skeleton : Type := mkSkeleton {
 ...
 }
 ```
 
-There are special fields in the dependent record which contain proofs that wellformededness conditions of the ProgramSkeleton are
+There are special fields in the dependent record which contain proofs that wellformededness conditions of the `skeleton` are
 satisfied, e.g. that names of functions are unique.
 
 ### UtilsSkeleton.v
 
-Contains functions for looking up information in a ProgramSkeleton, such as looking up the constructors of a datatype.
+Contains functions for looking up information in a `skeleton`, such as looking up the constructors of a datatype.
 
-### Program.v
+### ProgramDef.v
 
 Contains the definition of a program.
 
 ```coq
-Record Program : Type := mkProgram {
+Record program : Type := mkProgram {
 ...
 }.
 ```
 
-A program is a `Skeleton`, together with bodies for all signatures contained in the `Skeleton`.
+A program is a `skeleton`, together with bodies for all signatures contained in the `skeleton`.
 
 ### Typechecker.v
 
@@ -145,14 +147,8 @@ Theorem preservation : forall (p : Program) (e1 e2 : Expr) (t : TypeName),
     (skeleton p) / [] |- e2 : t.
 ```
 
-### DefuncI.v
+### {D,R}efuncI.v to {D,R}efuncIV.v, Lift..., Inline...
 
-Contains Stage I of the algorithm: the computation of the new program skeleton.
+For an overview of how the definitions and lemmas in these files are used to form our defunctionalization
+and refunctionalization algorithms and prove their properties as stated in our paper, please refer to `Results.v`.
 
-```coq
-Definition defunctionalizeToSkeleton (p : Program) (n : TypeName) : ProgramSkeleton :=
-```
-
-### DefuncII.v and DefuncIII.v
-
-Contain Stage II of the algorithm: the computation of the new function bodies.

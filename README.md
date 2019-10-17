@@ -20,7 +20,8 @@ The Makefile provided in this (root) directory performs the following build step
 - Extract the Haskell code from the Coq code
 - Copy the Haskell files into the directory `Repl/extracted`
 - Use `stack` to build the REPL
-- Run `stack exec Repl-exe` in the `Repl` directory
+
+Afterwards, you can run the REPL with `stack exec Repl-exe` in the `Repl` directory
 
 ## Building without Coq
 The directory `Repl/extracted` already contains Haskell files which are extracted from the Coq sources.

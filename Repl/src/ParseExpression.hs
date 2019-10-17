@@ -9,7 +9,7 @@ import AST
 import ProgramDef
 import Renamer.ParsedToNamed
 import Renamer.NamedToDeBruijn
-import Renamer.DeBruijnToCoq
+import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Parser.ParserDefinition
 import Parser.ExpressionParser
 import Parser.DeclarationParser
@@ -23,7 +23,7 @@ parseExpression sk str = do
     Right expr -> do
       renamedExpr <- rename sk expr
       namelessExpr <- exprNamed2exprDB renamedExpr
-      Right (exprDB2CoqExpr namelessExpr)
+      Right (deBruijnToCoq namelessExpr)
 
 parseProgram :: String -> Either String Coq_program
 parseProgram str = do

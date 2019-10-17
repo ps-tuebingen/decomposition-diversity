@@ -53,7 +53,8 @@ Record program : Type := mkProgram {
 }.
 ```
 
-A program is a `skeleton`, together with bodies for all signatures contained in the `skeleton`.
+A program is a `skeleton`, together with bodies for all signatures contained in the `skeleton`, and certain wellformedness conditions
+(see `Results.v` for the role of these conditions).
 
 ### Typechecker.v
 
@@ -92,24 +93,24 @@ Theorem typecheck_complete : forall (prog : skeleton) (ctx : ctxt) (e : expr) (t
 Contains the definition of values both as a function and inductive relation:
 
 ```coq
-Fixpoint value_b (e : Expr) : bool :
+Fixpoint value_b (e : expr) : bool :
 ...
-Inductive value : Expr -> Prop :=
+Inductive value : expr -> Prop :=
 ...
-Fixpoint value_reflect (e : Expr) : reflect (value e) (value_b e).
+Fixpoint value_reflect (e : expr) : reflect (value e) (value_b e).
 ...
 ```
 
 Contains the definition of a single step evaluation function:
 
 ```coq
-Fixpoint one_step_eval (p : Program) (e : Expr) {struct e} : option Expr :=
+Fixpoint one_step_eval (p : program) (e : expr) {struct e} : option expr :=
 ```
 
 together with an inductive relation:
 
 ```coq
-Inductive step : Program -> Expr -> Expr -> Prop :=
+Inductive step : program -> expr -> expr -> Prop :=
 ...
 where "'[' prog '|-' e '==>' e' ']'" := (step prog e e') : eval_scope.
 ```
@@ -118,11 +119,11 @@ Together with proofs of the correctness and completeness of the inductive relati
 function:
 
 ```coq
-Theorem eval_complete : forall (prog : Program) (e1 e2 : Expr),
+Theorem eval_complete : forall (prog : program) (e1 e2 : expr),
     [ prog |- e1 ==> e2 ] ->
     one_step_eval prog e1 = Some e2.
 	
-Theorem eval_correct : forall (prog : Program) (e e' : Expr),
+Theorem eval_correct : forall (prog : program) (e e' : expr),
     one_step_eval prog e = Some e' ->
     [ prog |- e ==> e' ].
 ```

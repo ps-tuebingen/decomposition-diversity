@@ -7,8 +7,8 @@ module ParseExpression
 import Skeleton
 import AST
 import ProgramDef
-import Renamer.ParsedToNamed
-import Renamer.NamedToDeBruijn
+import Renamer.ParsedToNamed (parsedToNamed)
+import Renamer.NamedToDeBruijn (namedToDeBruijn)
 import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Parser.ParserDefinition
 import Parser.ExpressionParser
@@ -21,7 +21,7 @@ parseExpression sk str = do
   case parsedStr of
     Left err -> Left err
     Right expr -> do
-      renamedExpr <- rename sk expr
+      renamedExpr <- parsedToNamed sk expr
       namelessExpr <- namedToDeBruijn renamedExpr
       Right (deBruijnToCoq namelessExpr)
 

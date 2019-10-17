@@ -9,7 +9,7 @@ import HaskellAST
 import ProgramDef
 import Parser.ParserDefinition
 import Parser.DeclarationParser
-import Renamer.ParsedToNamed
+import Renamer.ParsedToNamed (parsedToNamed)
 import Renamer.NamedToDeBruijn (namedToDeBruijn')
 import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Data.Foldable (foldrM)
@@ -42,7 +42,7 @@ addConFunToProgram cfbod (Coq_mkProgram skel fun_bods          cfun_bods_g  cfun
 
 assembleProgramHelper :: Declaration -> Coq_program -> AssembleM Coq_program
 assembleProgramHelper (FunctionD (FNameParse fname) fargs _ ex) pr = do
-  renamedExpr <- rename (program_skeleton pr) ex
+  renamedExpr <- parsedToNamed (program_skeleton pr) ex
   debruijnExpr <- namedToDeBruijn' (unmapVarNameParse (fst <$> fargs)) renamedExpr
   let coqexpr      = deBruijnToCoq debruijnExpr
   let funbod       = (fname, coqexpr) 
@@ -50,7 +50,7 @@ assembleProgramHelper (FunctionD (FNameParse fname) fargs _ ex) pr = do
 assembleProgramHelper (GenFunD qn fargs cocases) pr = do
   let renameCocase :: (ScopedName, [VarNameParse], ExprParse) -> AssembleM (ScopedName, [String], ExprNamed)
       renameCocase (sn, cargs, expr) = do
-        expr' <- rename (program_skeleton pr) expr
+        expr' <- parsedToNamed (program_skeleton pr) expr
         Right (sn, unmapVarNameParse cargs, expr')
   renamedCoCases <- sequence (renameCocase <$> cocases)
   let changeToNameless (name,args, e) = do
@@ -63,7 +63,7 @@ assembleProgramHelper (GenFunD qn fargs cocases) pr = do
 assembleProgramHelper (ConFunD qn fargs _rtype cases) pr = do
   let renameCase :: (ScopedName, [VarNameParse], ExprParse) -> AssembleM (ScopedName, [String], ExprNamed)
       renameCase (sn, dargs, expr) = do
-        expr' <- rename (program_skeleton pr) expr
+        expr' <- parsedToNamed (program_skeleton pr) expr
         Right (sn, unmapVarNameParse dargs, expr')
   renamedCases <- sequence (renameCase <$> cases)
   let changeToNameless (name, args, e) = do

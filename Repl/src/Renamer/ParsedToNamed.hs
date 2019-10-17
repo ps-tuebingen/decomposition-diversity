@@ -1,6 +1,6 @@
 module Renamer.ParsedToNamed
   (
-    rename
+    parsedToNamed
   ) where
 
 import Data.List (find)
@@ -18,8 +18,8 @@ import HaskellAST
 
 type RenamerM a = ReaderT Coq_skeleton (Except String) a
 
-rename :: Coq_skeleton -> ExprParse -> Either String ExprNamed
-rename sk expr = runExcept (runReaderT (rename' expr) sk)
+parsedToNamed :: Coq_skeleton -> ExprParse -> Either String ExprNamed
+parsedToNamed sk expr = runExcept (runReaderT (rename' expr) sk)
 
 --------------------------------------------------------------------------------
 -- Helper functions in the Renamer Monad

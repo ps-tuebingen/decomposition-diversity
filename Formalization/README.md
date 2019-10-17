@@ -29,7 +29,7 @@ Contains the definition of the ProgramSkeleton, which is formalized as a depende
 The ProgramSkeleton contains the datatypes and constructors, the codatatypes and destructors, and the signatures of all
 functions, generator functions and consumer functions contained in the program.
 
-```
+```coq
 Record ProgramSkeleton : Type := mkProgramSkeleton {
 ...
 }
@@ -46,7 +46,7 @@ Contains functions for looking up information in a ProgramSkeleton, such as look
 
 Contains the definition of a program.
 
-```
+```coq
 Record Program : Type := mkProgram {
 ...
 }.
@@ -61,18 +61,18 @@ Contains both:
 - A function `typecheck'` which given an expression e, a ProgramSkeleton ps and a typing context ctx returns a `option TypeName`
 - An inductive relation `TypeDeriv` formalizing the typing rules for expressions.
 
-```
+```coq
 Fixpoint typecheck' (ps : ProgramSkeleton) (ctx : Ctxt) (e : Expr) {struct e} : option TypeName :=
 ...
 
 Inductive TypeDeriv : ProgramSkeleton -> Ctxt -> Expr -> TypeName -> Prop :=
-...
+...coq
 where "p '/' c '|-' e ':' t" := (TypeDeriv p c e t)
 ```
 
 There is one theorem stating that the typecheck function is correct:
 
-```
+```coq
 Theorem typecheck_correct : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : Expr) (t : TypeName),
     typecheck' prog ctx e = Some t ->
     prog / ctx |- e : t.
@@ -80,7 +80,7 @@ Theorem typecheck_correct : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : Ex
 
 and one theorem stating that the typecheck function is complete:
 
-```
+```coq
 Theorem typecheck_complete : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : Expr) (tn : TypeName),
     prog / ctx |- e : tn ->
   typecheck' prog ctx e = Some tn
@@ -90,7 +90,7 @@ Theorem typecheck_complete : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : E
 
 Contains the definition of values both as a function and inductive relation:
 
-```
+```coq
 Fixpoint value_b (e : Expr) : bool :
 ...
 Inductive value : Expr -> Prop :=
@@ -101,13 +101,13 @@ Fixpoint value_reflect (e : Expr) : reflect (value e) (value_b e).
 
 Contains the definition of a single step evaluation function:
 
-```
+```coq
 Fixpoint one_step_eval (p : Program) (e : Expr) {struct e} : option Expr :=
 ```
 
 together with an inductive relation:
 
-```
+```coq
 Inductive step : Program -> Expr -> Expr -> Prop :=
 ...
 where "'[' prog '|-' e '==>' e' ']'" := (step prog e e') : eval_scope.
@@ -116,7 +116,7 @@ where "'[' prog '|-' e '==>' e' ']'" := (step prog e e') : eval_scope.
 Together with proofs of the correctness and completeness of the inductive relation w.r.t to the
 function:
 
-```
+```coq
 Theorem eval_complete : forall (prog : Program) (e1 e2 : Expr),
     [ prog |- e1 ==> e2 ] ->
     one_step_eval prog e1 = Some e2.
@@ -130,7 +130,7 @@ Theorem eval_correct : forall (prog : Program) (e e' : Expr),
 
 Contains the proof of the progress property:
 
-```
+```coq
 Theorem progress : forall (e : Expr) (p : Program) (tc : exists t, (skeleton p) / [] |- e : t),
     value_b e = true <-> one_step_eval p e = None.
 ```
@@ -139,7 +139,7 @@ Theorem progress : forall (e : Expr) (p : Program) (tc : exists t, (skeleton p) 
 
 Contains the proof of the preservation property:
 
-```
+```coq
 Theorem preservation : forall (p : Program) (e1 e2 : Expr) (t : TypeName),
     ((skeleton p) / [] |- e1 : t) ->
     [ p |- e1 ==> e2 ] ->
@@ -150,7 +150,7 @@ Theorem preservation : forall (p : Program) (e1 e2 : Expr) (t : TypeName),
 
 Contains Stage I of the algorithm: the computation of the new program skeleton.
 
-```
+```coq
 Definition defunctionalizeToSkeleton (p : Program) (n : TypeName) : ProgramSkeleton :=
 ```
 

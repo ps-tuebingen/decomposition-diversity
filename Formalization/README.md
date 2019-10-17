@@ -14,16 +14,15 @@ destructorization used in the paper.
 
 Contains the definition of the abstract syntax of expressions.
 Expressions are formalized with de Bruijn indices.
-
-### UtilsAST.v
-
-Contains various utilities for working with expressions:
-
-- Definition and lemmas about equality of names, qualified names and scoped names.
-- Substitution of expressions for variables in expressions.
+The file also contains:
 - A custom induction principle for expressions. This is necessary since expressions are a nested inductive data type.
+- Substitution of expressions for variables in expressions.
 
-### ProgramSkeleton.v
+### Names.v
+
+Contains definitions and lemmas about equality of names, qualified names and scoped names.
+
+### Skeleton.v
 
 Contains the definition of the ProgramSkeleton, which is formalized as a dependent record.
 The ProgramSkeleton contains the datatypes and constructors, the codatatypes and destructors, and the signatures of all
@@ -42,7 +41,7 @@ satisfied, e.g. that names of functions are unique.
 
 Contains functions for looking up information in a ProgramSkeleton, such as looking up the constructors of a datatype.
 
-### UBProgram.v
+### Program.v
 
 Contains the definition of a program.
 
@@ -52,7 +51,7 @@ Record Program : Type := mkProgram {
 }.
 ```
 
-A program is a ProgramSkeleton, together with bodies for all signatures contained in the ProgramSkeleton.
+A program is a `Skeleton`, together with bodies for all signatures contained in the `Skeleton`.
 
 ### Typechecker.v
 

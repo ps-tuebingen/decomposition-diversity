@@ -6,7 +6,7 @@
 ## Overview of the Formalization
 
 The most important parts of the formalization are contained in the following files
-and in the file `Results.v `, which explains how we validated the theorems stated in our paper.
+and in the file `Results.v`, which explains how we validated the theorems stated in our paper.
 
 Please note that this file (and the whole formalization) uses the terms de- and
 refunctionalization instead of the terms constructorization and

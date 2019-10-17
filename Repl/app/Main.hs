@@ -447,19 +447,7 @@ evalExpr e = do
 --------------------------------------------------------------------------------
 
 completionlist :: [String]
-completionlist =
-  [ ":help"
-  , ":quit"
-  , ":showprogram"
-  , ":defunctionalize"
-  , ":refunctionalize"
-  , ":load"
-  , ":declare"
-  , ":reload"
-  , ":set"
-  , ":unset"
-  , ":step"
-  ]
+completionlist = fst <$> options
 
 completer :: CompleterStyle InnerRepl
 completer = Prefix cmdCompleter prefixCompleters

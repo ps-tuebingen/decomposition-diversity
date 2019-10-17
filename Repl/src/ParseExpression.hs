@@ -9,6 +9,7 @@ import AST
 import ProgramDef
 import HaskellAST
 import Renamer.Renamer
+import Renamer.DeBruijnToCoq
 import Parser.ParserDefinition
 import Parser.ExpressionParser
 import Parser.DeclarationParser

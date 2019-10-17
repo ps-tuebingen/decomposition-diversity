@@ -8,14 +8,9 @@ module HaskellAST
   -- Named to DeBruijn
   , exprNamed2exprDB
   , exprNamed2exprDB'
-  , exprDB2CoqExpr
-  , coqExpr2exprDB
-  , lookupArgs
   , fromToNames
   ) where
 import Names (VarName, ScopedName, TypeName, QName, Name, ScopedName(..))
-import AST
-import Skeleton
 import Plumbing ()
 
 -- | Handwritten, parameterized, version of the extracted type "Coq_expr"
@@ -60,84 +55,7 @@ checkClosed n (CoMatch _ bl cases) =
   (all (==True) ((\(_,bs,e) -> checkClosed (toInteger (length bl + length bs)) e) <$> cases))
 checkClosed n (Let _ e1 e2) = checkClosed n e1 && checkClosed (n + 1) e2
 
-{---------------------------------------------
------------Coq_expr <-> ExprDB  --------------
----------------------------------------------}
 
--- | Convert a ExprDB into a Coq_expr.
-exprDB2CoqExpr :: ExprDB -> Coq_expr
-exprDB2CoqExpr (Var n) = E_Var n
-exprDB2CoqExpr (Constr n args) = E_Constr n (exprDB2CoqExpr <$> args)
-exprDB2CoqExpr (DestrCall n e args) = E_DestrCall n (exprDB2CoqExpr e) (exprDB2CoqExpr <$> args)
-exprDB2CoqExpr (FunCall n args) = E_FunCall n (exprDB2CoqExpr <$> args)
-exprDB2CoqExpr (GenFunCall n args) = E_GenFunCall n (exprDB2CoqExpr <$> args)
-exprDB2CoqExpr (ConsFunCall n e args) = E_ConsFunCall n (exprDB2CoqExpr e) (exprDB2CoqExpr <$> args)
-exprDB2CoqExpr (Match n e bl cases rtype) =
-  E_Match n (exprDB2CoqExpr e)
-  ((\(_,e,n) -> (exprDB2CoqExpr e, n)) <$> bl) -- Binding List
-  ((\(n,_,e) -> (n, exprDB2CoqExpr e)) <$> cases) -- Cases
-  rtype
-exprDB2CoqExpr (CoMatch n bl cocases) =
-  E_CoMatch n
-  ((\(_,e,n) -> (exprDB2CoqExpr e, n)) <$> bl) -- Binding List
-  ((\(n,_,e) -> (n, exprDB2CoqExpr e)) <$> cocases) -- Cocases
-exprDB2CoqExpr (Let _ e1 e2) = E_Let (exprDB2CoqExpr e1) (exprDB2CoqExpr e2)
-
--- | Convert a Coq_expr into a ExprDB.
--- An ExprDB contains more information than a Coq_expr, since the locations of
--- binding occurrances are explicitly marked with "()" in matches and comatches.
-coqExpr2exprDB :: Coq_skeleton -> Coq_expr -> ExprDB
-coqExpr2exprDB _  (E_Var n) =
-  Var n
-coqExpr2exprDB sk (E_Constr n args) =
-  Constr n (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_DestrCall n e args) =
-  DestrCall n (coqExpr2exprDB sk e) (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_FunCall n args) =
-  FunCall n (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_GenFunCall n args) =
-  GenFunCall n (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_ConsFunCall n e args) =
-  ConsFunCall n (coqExpr2exprDB sk e) (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_Match n e bl cases rtype) =
-  let
-    newBindingList :: [((),ExprDB, TypeName)]
-    newBindingList = (\(e,tn) -> ((),coqExpr2exprDB sk e,tn)) <$> bl
-    newCases :: [(ScopedName, [()], ExprDB)]
-    newCases = (\(sn,e) -> (sn,replicate (lookupNumArgs sn sk) (),coqExpr2exprDB sk e)) <$> cases
-  in
-  Match n (coqExpr2exprDB sk e) newBindingList newCases rtype
-coqExpr2exprDB sk (E_CoMatch n bl cocases) =
-  let
-    newBindingList :: [((),ExprDB, TypeName)]
-    newBindingList = (\(e,tn) -> ((),coqExpr2exprDB sk e,tn)) <$> bl
-    newCocases :: [(ScopedName, [()], ExprDB)]
-    newCocases = (\(sn,e) -> (sn,replicate (lookupNumArgs sn sk) (),coqExpr2exprDB sk e)) <$> cocases
-  in
-  CoMatch n newBindingList newCocases
-coqExpr2exprDB sk (E_Let e1 e2) =
-  Let () (coqExpr2exprDB sk e1) (coqExpr2exprDB sk e2)
-
-
-lookupScopedNamesSkeleton :: Coq_skeleton -> [(ScopedName, [TypeName])]
-lookupScopedNamesSkeleton sk =
-  let
-    ctors = (skeleton_ctors sk)
-    dtors = (\((sn,args),_) -> (sn, args)) <$> (skeleton_dtors sk)
-  in
-    ctors ++ dtors
-
-lookupArgs :: ScopedName -> Coq_skeleton -> [TypeName]
-lookupArgs sn sk = case lookup sn (lookupScopedNamesSkeleton sk) of
-  Just args -> args
-  Nothing -> error "lookupNumArgs: ScopedName not in skeleton"
-
-lookupNumArgs :: ScopedName -> Coq_skeleton -> Int
-lookupNumArgs sn sk =
-  let scopedNames = (lookupScopedNamesSkeleton sk) in
-  case (lookup sn scopedNames) of
-    Just args -> length args
-    Nothing -> error $ "lookupNumArgs: ScopedName " ++ show sn ++ " not in skeleton"
 
 {---------------------------------------------
 -----------ExprDB <-> ExprNamed  --------------

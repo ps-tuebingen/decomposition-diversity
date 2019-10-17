@@ -10,6 +10,7 @@ import ProgramDef
 import Parser.ParserDefinition
 import Parser.DeclarationParser
 import Renamer.Renamer
+import Renamer.DeBruijnToCoq
 import Data.Foldable (foldrM)
 import AssembleSkeleton
 

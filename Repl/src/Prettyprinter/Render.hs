@@ -22,8 +22,8 @@ import Control.Monad.Reader
 import ProgramDef
 import Skeleton
 import AST
-import HaskellAST
 import Renamer.DeBruijnToNamed
+import Renamer.CoqToDeBruijn
 import Prettyprinter.PrettyprinterDefs
 import Prettyprinter.PrettyprintExprs
 import Prettyprinter.PrettyprintDeclarations

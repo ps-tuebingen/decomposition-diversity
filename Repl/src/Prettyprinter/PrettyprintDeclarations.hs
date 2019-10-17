@@ -7,6 +7,7 @@ import Skeleton
 
 import HaskellAST
 import Renamer.DeBruijnToNamed
+import Renamer.CoqToDeBruijn
 import Prettyprinter.PrettyprinterDefs
 import Prettyprinter.PrettyprintExprs
 import Data.Text.Prettyprint.Doc

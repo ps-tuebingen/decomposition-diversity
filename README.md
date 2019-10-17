@@ -4,15 +4,15 @@ This is the formalization of our language with support for symmetric data and co
 
 ## Formalization
 
-This contains the Coq Formalization. The results of the formalization are collected in Results.v.
+The folder `Formalization` contains the Coq Formalization. The results of the formalization are collected in Results.v.
 The Makefile for the formalization contains a target for extracting code to Haskell.
 
 ## Repl
 
-This contains a Repl, Parser and PrettyPrinter written in Haskell.
+The folder `Repl` contains a Repl, Parser and PrettyPrinter written in Haskell.
 
 ## Build Instructions
-The Makefile provided in this directory performs the following build steps:
+The Makefile provided in this (root) directory performs the following build steps:
 
 - Build the Coq Files in the "Formalization" directory
 - Extract the Haskell Code from the Coq Code

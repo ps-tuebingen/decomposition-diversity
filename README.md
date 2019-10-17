@@ -4,7 +4,9 @@ This is the formalization of our language with support for symmetric data and co
 
 ## Formalization
 
-The folder `Formalization` contains the Coq formalization. The results of the formalization are collected in `Results.v`.
+The folder `Formalization` contains the Coq formalization.
+An overview of the various Coq files can be found in the README.
+The results of the formalization are collected in `Results.v`; please refer to this file to understand how we validated the theorems stated in our paper.
 The `Makefile` for the formalization contains a target for extracting code to Haskell.
 
 ## Repl

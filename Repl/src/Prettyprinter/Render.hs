@@ -13,20 +13,20 @@ module Prettyprinter.Render
     docToTerminal
   ) where
 
-import System.Console.ANSI
-import qualified Data.Text as T
+import Control.Monad.Reader
 import Data.Text.Prettyprint.Doc
 import Data.Text.Prettyprint.Doc.Render.String
-import Control.Monad.Reader
+import qualified Data.Text as T
+import System.Console.ANSI
 
-import ProgramDef
-import Skeleton
 import AST
-import Renamer.DeBruijnToNamed (deBruijnToNamed)
-import Renamer.CoqToDeBruijn (coqToDeBruijn)
 import Prettyprinter.Definitions
 import Prettyprinter.Expressions
 import Prettyprinter.Declarations
+import ProgramDef
+import Renamer.DeBruijnToNamed (deBruijnToNamed)
+import Renamer.CoqToDeBruijn (coqToDeBruijn)
+import Skeleton
 
 {--------------------------------------------
 ----Custom Backend for Console---------------
@@ -39,14 +39,6 @@ keywordOpts = [SetColor Foreground Vivid Blue]
 -- | How to color typenames.
 typenameOpts :: [SGR]
 typenameOpts = [SetColor Foreground Dull Green]
-
--- | How to color debug information.
-debugOpts :: [SGR]
-debugOpts = [SetColor Foreground Vivid Red]
-
--- | How to color comments.
-commentOpts :: [SGR]
-commentOpts = [Reset] --no highlighting
 
 -- | Render to console using color highlighting.
 renderANSI :: SimpleDocStream Annotation -> IO ()
@@ -65,19 +57,12 @@ renderANSI = \case
     SAnnPush Keyword x -> do
       setSGR keywordOpts
       renderANSI x
-    SAnnPush Comment x -> do
-      setSGR commentOpts
-      renderANSI x
     SAnnPush TypeName x -> do
       setSGR typenameOpts
-      renderANSI x
-    SAnnPush Debug x -> do
-      setSGR debugOpts
       renderANSI x
     SAnnPop x    -> do
       setSGR [Reset]
       renderANSI x
-
 
 {---------------------------------------------
 -----------Exported Functions-----------------

@@ -4,7 +4,7 @@ module Parser.ExpressionParser
   , parseExpression
   ) where
 
-import Parser.ParserDefinition
+import Parser.Definitions
 import Parser.Lexer
 
 import Text.Megaparsec ((<|>), try, sepBy, some, eof)

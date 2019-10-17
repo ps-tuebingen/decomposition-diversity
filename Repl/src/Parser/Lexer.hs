@@ -19,7 +19,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Char (alphaNumChar, char, string, space1, lowerChar, upperChar)
 import qualified Text.Megaparsec.Char.Lexer as L
 import Control.Monad(void)
-import Parser.ParserDefinition
+import Parser.Definitions
 
 --------------------------------------------------------------------------------
 -- Lexer -----------------------------------------------------------------------

@@ -7,7 +7,7 @@ import Names (ScopedName, QName, Name)
 import AST (Coq_expr(..))
 import HaskellAST
 import ProgramDef
-import Parser.ParserDefinition
+import Parser.Definitions
 import Parser.Declarations
 import Renamer.ParsedToNamed (parsedToNamed)
 import Renamer.NamedToDeBruijn (namedToDeBruijn')

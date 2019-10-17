@@ -1,4 +1,4 @@
-module Parser.ParserDefinition
+module Parser.Definitions
   (
     QNameParse(..)
   , SNameParse(..)

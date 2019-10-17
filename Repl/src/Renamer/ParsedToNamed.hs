@@ -7,7 +7,7 @@ import Data.List (find)
 import Control.Monad.Except
 import Control.Monad.Reader
 
-import Parser.ParserDefinition
+import Parser.Definitions
 import Names (ScopedName, TypeName, unscope, ScopedName(..))
 import Skeleton
 import HaskellAST

@@ -10,7 +10,7 @@ import ProgramDef
 import Renamer.ParsedToNamed (parsedToNamed)
 import Renamer.NamedToDeBruijn (namedToDeBruijn)
 import Renamer.DeBruijnToCoq (deBruijnToCoq)
-import Parser.ParserDefinition
+import Parser.Definitions
 import Parser.ExpressionParser
 import Parser.Declarations
 import AssembleProgram

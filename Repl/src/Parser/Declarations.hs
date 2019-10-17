@@ -10,7 +10,7 @@ import qualified Text.Megaparsec.Char as C
 
 import Names (TypeName, ScopedName(..), QName)
 
-import Parser.ParserDefinition
+import Parser.Definitions
 import Parser.Lexer
 import Parser.ExpressionParser
 

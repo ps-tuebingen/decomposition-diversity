@@ -58,7 +58,7 @@ assembleProgramHelper (GenFunD qn fargs cocases) pr = do
   let cocasesRes :: [(ScopedName, Coq_expr)]
       cocasesRes = (\(sn, e) -> (sn, exprDB2CoqExpr e)) <$> debruijnCocases
   Right $ addGenFunToProgram (qn,cocasesRes) pr
-assembleProgramHelper (ConFunD qn fargs rtype cases) pr = do
+assembleProgramHelper (ConFunD qn fargs _rtype cases) pr = do
   let renameCase :: (ScopedName, [VarNameParse], ExprParse) -> AssembleM (ScopedName, [String], ExprNamed)
       renameCase (sn, dargs, expr) = do
         expr' <- rename (program_skeleton pr) expr

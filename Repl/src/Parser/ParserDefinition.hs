@@ -16,7 +16,6 @@ module Parser.ParserDefinition
 import Text.Megaparsec
 import Data.Void(Void)
 import Data.Bifunctor(first)
-import qualified Data.Set as S
 
 import Names (QName)
 

@@ -55,10 +55,6 @@ symbol = L.symbol sc
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
--- | Wrap a parser to also consume enclosing brackets.
-brackets :: Parser a -> Parser a
-brackets = between (symbol "[") (symbol "]")
-
 -- | A list of reserved keywords
 rws :: [String]
 rws = ["data", "codata", "where", "in", "let", "match", "comatch", "function",

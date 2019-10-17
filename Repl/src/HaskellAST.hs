@@ -19,10 +19,7 @@ import Names (VarName, ScopedName, TypeName, QName, Name, ScopedName(..))
 import AST
 import Skeleton
 import Plumbing ()
-import Debug.Trace
 
-
- 
 -- | Handwritten, parameterized, version of the extracted type "Coq_expr"
 -- Arguments:
 -- var = type of variables (Int for deBruijn, String for Named Variables)
@@ -252,7 +249,7 @@ exprNamed2exprDB' ctxt (Match n e bl cases rtype) = do
   e' <- exprNamed2exprDB' ctxt e
   let bindingNames = (\(n,_,_) -> n) <$> bl
   let blTrans :: (a, Expr a a, String) -> Either String ((), ExprDB, String)
-      blTrans (n,e,t) = do
+      blTrans (_n,e,t) = do
         e' <- exprNamed2exprDB' ctxt e
         Right $ ((),e',t)
   bl' <- sequence (blTrans <$> bl)
@@ -265,7 +262,7 @@ exprNamed2exprDB' ctxt (Match n e bl cases rtype) = do
 exprNamed2exprDB' ctxt (CoMatch n bl cocases) = do
   let bindingNames = (\(n,_,_) -> n) <$> bl
   let blTrans :: (a, Expr a a, String) -> Either String ((), ExprDB, String)
-      blTrans (n,e,t) = do
+      blTrans (_n,e,t) = do
         e' <- exprNamed2exprDB' ctxt e
         Right $ ((),e',t)
   bl' <- sequence (blTrans <$> bl)

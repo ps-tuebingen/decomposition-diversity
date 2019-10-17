@@ -11,7 +11,6 @@ import Prettyprinter.PrettyprintExprs
 import Data.Text.Prettyprint.Doc
 import Data.List (intersperse)
 import Data.Maybe (fromMaybe)
-import Control.Monad.Reader
 
 -- | Print argument list of toplevel declarations.
 --  (x1 : T1, .. , xn : Tn)

@@ -8,7 +8,7 @@ import Control.Monad.Except
 import Control.Monad.Reader
 
 import Parser.ParserDefinition
-import Names (VarName, ScopedName, TypeName, QName, Name, unscope, ScopedName(..))
+import Names (ScopedName, TypeName, unscope, ScopedName(..))
 import AST
 import Skeleton
 import HaskellAST
@@ -77,7 +77,6 @@ rename' (FunCallP (FNameParse f) args) = do
   args' <- sequence (rename' <$> args)
   return (FunCall f args')
 rename' (GeneratorP sn args) = do
-  sk <- ask
   renameDec <- renameGenerator sn
   case renameDec of
     Xtor sn -> do
@@ -87,7 +86,6 @@ rename' (GeneratorP sn args) = do
       args' <- sequence (rename' <$> args)
       return (GenFunCall sn args')
 rename' (ConsumerP str e args) = do
-  sk <- ask
   renameDec <- renameConsumer str
   case renameDec of
     Xtor sn -> do

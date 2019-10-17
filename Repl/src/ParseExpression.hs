@@ -22,7 +22,7 @@ parseExpression sk str = do
     Left err -> Left err
     Right expr -> do
       renamedExpr <- rename sk expr
-      namelessExpr <- exprNamed2exprDB renamedExpr
+      namelessExpr <- namedToDeBruijn renamedExpr
       Right (deBruijnToCoq namelessExpr)
 
 parseProgram :: String -> Either String Coq_program

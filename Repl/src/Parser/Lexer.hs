@@ -18,8 +18,9 @@ module Parser.Lexer
 import Text.Megaparsec
 import Text.Megaparsec.Char (alphaNumChar, char, string, space1, lowerChar, upperChar)
 import qualified Text.Megaparsec.Char.Lexer as L
-import Control.Monad(void)
-import Parser.ParserDefinition
+import Control.Monad (void)
+
+import Parser.Definitions
 
 --------------------------------------------------------------------------------
 -- Lexer -----------------------------------------------------------------------
@@ -69,7 +70,6 @@ rword w = (lexeme . try) (string w *> notFollowedBy alphaNumChar)
 -- [A-Z][a-z,A-Z,0-9]* \ rws
 uppercaseIdentP :: Parser String
 uppercaseIdentP =  (:) <$> upperChar <*> many alphaNumChar
-    
 
 -- | Identifier type 2. Does not return the leading underscore.
 -- '_'[a-z][a-z,A-Z,0-9]* \ rws
@@ -91,7 +91,7 @@ checkKeyword w1 w2 = if w2 `elem` rws
                      then fail $ "The keyword \"" ++ w2 ++ "\" cannot be used as " ++ w1
                      else return w2
 
--- | Parse a TypeName, e.g. "Bool"                          
+-- | Parse a TypeName, e.g. "Bool"
 typeNameP :: Parser TypeNameParse
 typeNameP = do
   tn <- lexeme uppercaseIdentP
@@ -142,7 +142,7 @@ snameGlobalImplP :: Parser SNameParse
 snameGlobalImplP = lexeme $ do
   n <- uppercaseIdentP
   return (Global (QNameImpl n))
-  
+
 snameP :: Parser SNameParse
 snameP = try snameLocalExplP <|> try snameGlobalExplP <|> try snameLocalImplP <|> snameGlobalImplP
 

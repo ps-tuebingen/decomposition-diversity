@@ -21,7 +21,7 @@ import Names
 import AST
 import ProgramDef
 import Skeleton
-import Prettyprinter.PrettyprinterDefs
+import Prettyprinter.Definitions
 import Prettyprinter.Render
 import Eval
 import LiftComatch
@@ -32,7 +32,7 @@ import LiftMatch
 import InlineComatch
 import InlineOrderGfuns
 import RefuncIII
-import ParseExpression (parseExpression, parseProgram)
+import Parser.Combined (parseExpression, parseProgram)
 
 --------------------------------------------------------------------------------
 -- The Repl Monad

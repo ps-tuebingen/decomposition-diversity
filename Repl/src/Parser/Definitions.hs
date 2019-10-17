@@ -1,4 +1,4 @@
-module Parser.ParserDefinition
+module Parser.Definitions
   (
     QNameParse(..)
   , SNameParse(..)
@@ -7,15 +7,13 @@ module Parser.ParserDefinition
   , TypeNameParse(..)
   , ExprParse(..)
   , ErrorType
---  , UroboroError(..)
---  , annotateError
   , Parser
   , parseInput
   ) where
 
+import Data.Bifunctor (first)
 import Text.Megaparsec
-import Data.Void(Void)
-import Data.Bifunctor(first)
+import Data.Void (Void)
 
 import Names (QName)
 
@@ -55,30 +53,7 @@ data ExprParse
 -- Custom Error Handling
 --------------------------------------------------------------------------------
 
-type ErrorType = Void --UroboroError
-
--- data UroboroError = UroboroError
---   (Maybe (ErrorItem Char)) -- unexpected part
---   (S.Set (ErrorItem Char)) -- expected part
---   String                 -- Custom part
---   deriving (Eq, Ord, Show)
-
--- instance ShowErrorComponent UroboroError where
---   showErrorComponent (UroboroError us es str) =
---     parseErrorTextPretty (TrivialError undefined us es :: ParseError Char Void)
---     ++ str
-
--- appendError :: String -> ErrorFancy UroboroError -> ErrorFancy UroboroError
--- appendError str (ErrorFail str') = ErrorFail (str ++ "    " ++  str')
--- appendError _ (ErrorIndentation ord pos1 pos2) = ErrorIndentation ord pos1 pos2
--- appendError str (ErrorCustom (UroboroError us es str')) = ErrorCustom (UroboroError us es (str ++ str'))
-
--- annotateError :: String -> Parser a -> Parser a
--- annotateError str p = region handler p
---   where
---     handler :: (ParseError (Token String) UroboroError) -> (ParseError (Token String) UroboroError)
---     handler (TrivialError pos us es) = FancyError pos (S.singleton $ ErrorCustom (UroboroError us es str))
---     handler (FancyError pos efs) = FancyError pos (S.map (appendError str) efs)
+type ErrorType = Void
 
 --------------------------------------------------------------------------------
 -- Definition of Parser

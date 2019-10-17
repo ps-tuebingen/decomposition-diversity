@@ -1,4 +1,4 @@
-module Parser.DeclarationParser
+module Parser.Declarations
   (
     Declaration(..)
   , declarationsP
@@ -9,10 +9,9 @@ import qualified Text.Megaparsec.Char.Lexer as L
 import qualified Text.Megaparsec.Char as C
 
 import Names (TypeName, ScopedName(..), QName)
-
-import Parser.ParserDefinition
+import Parser.Definitions
+import Parser.Expressions
 import Parser.Lexer
-import Parser.ExpressionParser
 
 --------------------------------------------------------------------------------
 -- Different kinds of declarations

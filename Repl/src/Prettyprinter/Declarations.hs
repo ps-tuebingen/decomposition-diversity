@@ -1,18 +1,23 @@
-module Prettyprinter.PrettyprintDeclarations where
+module Prettyprinter.Declarations
+  (
+    codatatypesToDoc
+  , datatypesToDoc
+  , programToDoc
+  ) where
 
-import Names (QName, ScopedName, TypeName, Name, unscope)
-import AST
-import ProgramDef
-import Skeleton
-
-import HaskellAST
-import Renamer.DeBruijnToNamed (deBruijnToNamed')
-import Renamer.CoqToDeBruijn (coqToDeBruijn, lookupArgs)
-import Prettyprinter.PrettyprinterDefs
-import Prettyprinter.PrettyprintExprs
-import Data.Text.Prettyprint.Doc
 import Data.List (intersperse)
 import Data.Maybe (fromMaybe)
+import Data.Text.Prettyprint.Doc
+
+import AST
+import HaskellAST
+import Names (QName, ScopedName, TypeName, Name, unscope)
+import Prettyprinter.Definitions
+import Prettyprinter.Expressions
+import ProgramDef
+import Renamer.DeBruijnToNamed (deBruijnToNamed')
+import Renamer.CoqToDeBruijn (coqToDeBruijn, lookupArgs)
+import Skeleton
 
 -- | Print argument list of toplevel declarations.
 --  (x1 : T1, .. , xn : Tn)
@@ -20,6 +25,7 @@ argumentListToDoc :: [TypeName] -> PrettyPrinter
 argumentListToDoc args = do
   let x = (\(n,t) -> pretty (generateName n ++ " : " ++ t)) <$> (zip [0..] args)
   return $ parens (hsep (intersperse comma x))
+
 {---------------------------------------------
 -----------Prettyprint datatypes--------------
 ---------------------------------------------}
@@ -30,7 +36,7 @@ constructorToDoc (sn, argts) = do
   ppsn <- scopedNameToDoc sn
   let ppargts = parens (hsep (intersperse comma (pretty <$> argts)))
   return $ ppsn <> ppargts
-  
+
 -- | Prettyprint a single datatype declaration.
 datatypeToDoc :: TypeName -> [(ScopedName, [TypeName])] -> PrettyPrinter
 datatypeToDoc tn ctors = do
@@ -44,7 +50,7 @@ selectCtors :: TypeName -> Coq_ctors -> [(ScopedName, [TypeName])]
 selectCtors tn ctors =
   let filteredCtors = filter (\(sn,_) -> fst (unscope sn) == tn) ctors in
   filteredCtors
-  
+
 -- | Prettyprint all datatypes.
 datatypesToDoc :: Coq_dts -> Coq_ctors -> PrettyPrinter
 datatypesToDoc dts ctors = do
@@ -62,7 +68,7 @@ destructorToDoc (sn, argts, rtype) = do
   ppsn <- scopedNameToDoc sn
   let ppargts = parens (hsep (intersperse comma (pretty <$> argts)))
   return $ ppsn <> ppargts <+> colon <+> typename rtype
-  
+
 -- | Prettyprint a single codatatype declaration.
 codatatypeToDoc :: TypeName -> [(ScopedName, [TypeName], TypeName)] -> PrettyPrinter
 codatatypeToDoc tn dtors = do

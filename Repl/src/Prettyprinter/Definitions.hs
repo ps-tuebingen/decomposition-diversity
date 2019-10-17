@@ -1,23 +1,22 @@
-module Prettyprinter.PrettyprinterDefs where
-
-import ProgramDef
+module Prettyprinter.Definitions
+  (
+    PrettyPrinter
+  , PrettyPrinterConfig(..)
+  , Annotation(..)
+  , MyDoc
+  , keyword
+  , typename
+  ) where
 
 import Data.Default
 import Data.Text.Prettyprint.Doc
 import Control.Monad.Reader
 
-data Locality = Local | Global
-  deriving (Eq)
-
-instance Show Locality where
-  show Local = "local "
-  show Global = ""
+import ProgramDef
 
 data Annotation =
     Keyword
-  | Comment
   | TypeName
-  | Debug
 
 type MyDoc = Doc Annotation
 
@@ -37,8 +36,6 @@ instance Default PrettyPrinterConfig where
     printNat = True,
     printDeBruijn = False
     }
-  
-
 
 type PrettyPrinter = Reader PrettyPrinterConfig MyDoc
 
@@ -47,20 +44,12 @@ type PrettyPrinter = Reader PrettyPrinterConfig MyDoc
 ---------------------------------------------}
 
 -- | Prettyprint a string and annotate it as a typename.
-debuginfo :: String -> MyDoc
-debuginfo = annotate Debug . pretty
-
--- | Prettyprint a string and annotate it as a typename.
 typename :: String -> MyDoc
 typename = annotate TypeName . pretty
 
 -- | Prettyprint a string and annotate it as a keyword.
 keyword :: String -> MyDoc
 keyword = annotate Keyword . pretty
-
--- | Prettyprint a string and annotate it as a comment.
-comment :: String -> MyDoc
-comment = annotate Comment . pretty
 
 runPrettyprinter :: PrettyPrinter -> MyDoc
 runPrettyprinter pp = runReader pp def

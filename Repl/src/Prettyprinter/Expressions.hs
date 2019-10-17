@@ -1,4 +1,4 @@
-module Prettyprinter.PrettyprintExprs
+module Prettyprinter.Expressions
   (
     exprToDoc
   , scopedNameToDoc
@@ -7,13 +7,13 @@ module Prettyprinter.PrettyprintExprs
   , cocaseToDoc
   ) where
 
+import Control.Monad.Reader (asks)
 import Data.List (intersperse)
 import Data.Text.Prettyprint.Doc
-import Control.Monad.Reader (asks)
 
-import Names (TypeName, ScopedName(..), QName, Name)
 import HaskellAST
-import Prettyprinter.PrettyprinterDefs
+import Names (TypeName, ScopedName(..), QName, Name)
+import Prettyprinter.Definitions
 
 -- | Prettyprint a qualified name
 qNameToDoc :: (String, String) -> PrettyPrinter
@@ -22,7 +22,7 @@ qNameToDoc (tn, n) = do
   if printQualified
     then return $ typename tn <> colon <> pretty n
     else return $ pretty n
-    
+
 -- | Prettyprint a scoped name
 scopedNameToDoc :: ScopedName -> PrettyPrinter
 scopedNameToDoc (Coq_local (tn, n)) = do
@@ -54,7 +54,7 @@ natValueToDoc e =
     natValueToInt _ = error "natValueToDoc: Applied function to expression which is not a value of type nat"
   in
     pretty (show (natValueToInt e))
-    
+
 exprToDoc :: ExprNamed -> PrettyPrinter
 exprToDoc (Var str)                   = return $ pretty str
 exprToDoc (Constr sn args)            = generatorToDoc sn args
@@ -131,7 +131,7 @@ cocaseToDoc (sn, args, e) = do
   let ppargs = (parens . hsep) (intersperse comma (pretty <$> args))
   ppe <- exprToDoc e
   return (pretty "case" <+> ppsn <> ppargs <+> pretty "=>" <+> ppe)
-  
+
 -- | Prettyprint local comatches.
 comatchToDoc :: QName -> [(String, ExprNamed, TypeName)] -> [(ScopedName, [String], ExprNamed)] -> PrettyPrinter
 comatchToDoc qn bl cocases = do

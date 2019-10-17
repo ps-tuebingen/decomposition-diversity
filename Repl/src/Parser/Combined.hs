@@ -1,8 +1,10 @@
-module ParseExpression
+module Parser.Combined
   (
-    ParseExpression.parseExpression
+    parseExpression
   , parseProgram
   ) where
+
+import Text.Megaparsec (eof)
 
 import Skeleton
 import AST
@@ -10,14 +12,18 @@ import ProgramDef
 import Renamer.ParsedToNamed (parsedToNamed)
 import Renamer.NamedToDeBruijn (namedToDeBruijn)
 import Renamer.DeBruijnToCoq (deBruijnToCoq)
-import Parser.ParserDefinition
-import Parser.ExpressionParser
-import Parser.DeclarationParser
+import Parser.Definitions
+import Parser.Expressions
+import Parser.Declarations
 import AssembleProgram
+
+-- | Parse an expression.
+parseExpression' :: String -> Either String ExprParse
+parseExpression' input = parseInput (exprNoVarP >>= (\e -> eof >> return e)) input
 
 parseExpression :: Coq_skeleton -> String -> Either String Coq_expr
 parseExpression sk str = do
-  let parsedStr = Parser.ExpressionParser.parseExpression str
+  let parsedStr = parseExpression' str
   case parsedStr of
     Left err -> Left err
     Right expr -> do
@@ -31,3 +37,4 @@ parseProgram str = do
   case parsedDecls of
     Left err -> Left err
     Right decls -> assembleProgram decls
+

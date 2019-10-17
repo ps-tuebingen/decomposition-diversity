@@ -59,14 +59,14 @@ A program is a `skeleton`, together with bodies for all signatures contained in 
 
 Contains both:
 
-- A function `typecheck'` which given an expression e, a ProgramSkeleton ps and a typing context ctx returns a `option TypeName`
+- A function `typecheck'` which given an expression `e`, a program `skeleton` `ps` and a typing context `ctx` returns a `(error + TypeName)`.
 - An inductive relation `TypeDeriv` formalizing the typing rules for expressions.
 
 ```coq
-Fixpoint typecheck' (ps : ProgramSkeleton) (ctx : Ctxt) (e : Expr) {struct e} : option TypeName :=
+Fixpoint typecheck (ps : skeleton) (ctx : ctxt) (e : expr) {struct e} : (error + TypeName)  :=
 ...
 
-Inductive TypeDeriv : ProgramSkeleton -> Ctxt -> Expr -> TypeName -> Prop :=
+Inductive TypeDeriv : skeleton -> ctxt -> expr -> TypeName -> Prop :=
 ...coq
 where "p '/' c '|-' e ':' t" := (TypeDeriv p c e t)
 ```
@@ -74,17 +74,17 @@ where "p '/' c '|-' e ':' t" := (TypeDeriv p c e t)
 There is one theorem stating that the typecheck function is correct:
 
 ```coq
-Theorem typecheck_correct : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : Expr) (t : TypeName),
-    typecheck' prog ctx e = Some t ->
+Theorem typecheck_correct : forall (prog : skeleton) (ctx : ctxt) (e : expr) (t : TypeName),
+    typecheck prog ctx e = inr t ->
     prog / ctx |- e : t.
 ```
 
 and one theorem stating that the typecheck function is complete:
 
 ```coq
-Theorem typecheck_complete : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : Expr) (tn : TypeName),
+Theorem typecheck_complete : forall (prog : skeleton) (ctx : ctxt) (e : expr) (tn : TypeName),
     prog / ctx |- e : tn ->
-  typecheck' prog ctx e = Some tn
+    typecheck prog ctx e = inr tn.
 ```
 
 ### Eval.v
@@ -132,7 +132,7 @@ Theorem eval_correct : forall (prog : Program) (e e' : Expr),
 Contains the proof of the progress property:
 
 ```coq
-Theorem progress : forall (e : Expr) (p : Program) (tc : exists t, (skeleton p) / [] |- e : t),
+Theorem progress : forall (e : expr) (p : program) (tc : exists t, (program_skeleton p) / [] |- e : t),
     value_b e = true <-> one_step_eval p e = None.
 ```
 
@@ -141,10 +141,10 @@ Theorem progress : forall (e : Expr) (p : Program) (tc : exists t, (skeleton p) 
 Contains the proof of the preservation property:
 
 ```coq
-Theorem preservation : forall (p : Program) (e1 e2 : Expr) (t : TypeName),
-    ((skeleton p) / [] |- e1 : t) ->
+Theorem preservation : forall (p : program) (e1 e2 : expr) (t : TypeName),
+    ((program_skeleton p) / [] |- e1 : t) ->
     [ p |- e1 ==> e2 ] ->
-    (skeleton p) / [] |- e2 : t.
+    (program_skeleton p) / [] |- e2 : t.
 ```
 
 ### {D,R}efuncI.v to {D,R}efuncIV.v, Lift..., Inline...

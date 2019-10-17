@@ -44,7 +44,7 @@ library:
     - -Wno-orphans
 
 executables:
-  Repl-exe:
+  Repl:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

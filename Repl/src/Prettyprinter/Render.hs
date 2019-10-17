@@ -23,6 +23,7 @@ import ProgramDef
 import Skeleton
 import AST
 import HaskellAST
+import Renamer.DeBruijnToNamed
 import Prettyprinter.PrettyprinterDefs
 import Prettyprinter.PrettyprintExprs
 import Prettyprinter.PrettyprintDeclarations

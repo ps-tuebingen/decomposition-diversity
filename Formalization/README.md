@@ -5,7 +5,9 @@
 
 ## Overview of the Formalization
 
-The most important parts of the formalization are contained in the following files.
+The most important parts of the formalization are contained in the following files
+and in the file `Results.v`, which explains how we validated the theorems stated in our paper.
+
 Please note that this file (and the whole formalization) uses the terms de- and
 refunctionalization instead of the terms constructorization and
 destructorization used in the paper.
@@ -14,101 +16,101 @@ destructorization used in the paper.
 
 Contains the definition of the abstract syntax of expressions.
 Expressions are formalized with de Bruijn indices.
-
-### UtilsAST.v
-
-Contains various utilities for working with expressions:
-
-- Definition and lemmas about equality of names, qualified names and scoped names.
-- Substitution of expressions for variables in expressions.
+The file also contains:
 - A custom induction principle for expressions. This is necessary since expressions are a nested inductive data type.
+- Substitution of expressions for variables in expressions.
 
-### ProgramSkeleton.v
+### Names.v
 
-Contains the definition of the ProgramSkeleton, which is formalized as a dependent record.
-The ProgramSkeleton contains the datatypes and constructors, the codatatypes and destructors, and the signatures of all
+Contains definitions and lemmas about equality of names, qualified names and scoped names.
+
+### Skeleton.v
+
+Contains the definition of the `skeleton`, which is formalized as a dependent record.
+The `skeleton` contains the datatypes and constructors, the codatatypes and destructors, and the signatures of all
 functions, generator functions and consumer functions contained in the program.
 
-```
-Record ProgramSkeleton : Type := mkProgramSkeleton {
+```coq
+Record skeleton : Type := mkSkeleton {
 ...
 }
 ```
 
-There are special fields in the dependent record which contain proofs that wellformededness conditions of the ProgramSkeleton are
+There are special fields in the dependent record which contain proofs that wellformededness conditions of the `skeleton` are
 satisfied, e.g. that names of functions are unique.
 
 ### UtilsSkeleton.v
 
-Contains functions for looking up information in a ProgramSkeleton, such as looking up the constructors of a datatype.
+Contains functions for looking up information in a `skeleton`, such as looking up the constructors of a datatype.
 
-### UBProgram.v
+### ProgramDef.v
 
 Contains the definition of a program.
 
-```
-Record Program : Type := mkProgram {
+```coq
+Record program : Type := mkProgram {
 ...
 }.
 ```
 
-A program is a ProgramSkeleton, together with bodies for all signatures contained in the ProgramSkeleton.
+A program is a `skeleton`, together with bodies for all signatures contained in the `skeleton`, and certain wellformedness conditions
+(see `Results.v` for the role of these conditions).
 
 ### Typechecker.v
 
 Contains both:
 
-- A function `typecheck'` which given an expression e, a ProgramSkeleton ps and a typing context ctx returns a `option TypeName`
+- A function `typecheck'` which given an expression `e`, a program `skeleton` `ps` and a typing context `ctx` returns a `(error + TypeName)`.
 - An inductive relation `TypeDeriv` formalizing the typing rules for expressions.
 
-```
-Fixpoint typecheck' (ps : ProgramSkeleton) (ctx : Ctxt) (e : Expr) {struct e} : option TypeName :=
+```coq
+Fixpoint typecheck (ps : skeleton) (ctx : ctxt) (e : expr) {struct e} : (error + TypeName)  :=
 ...
 
-Inductive TypeDeriv : ProgramSkeleton -> Ctxt -> Expr -> TypeName -> Prop :=
-...
+Inductive TypeDeriv : skeleton -> ctxt -> expr -> TypeName -> Prop :=
+...coq
 where "p '/' c '|-' e ':' t" := (TypeDeriv p c e t)
 ```
 
 There is one theorem stating that the typecheck function is correct:
 
-```
-Theorem typecheck_correct : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : Expr) (t : TypeName),
-    typecheck' prog ctx e = Some t ->
+```coq
+Theorem typecheck_correct : forall (prog : skeleton) (ctx : ctxt) (e : expr) (t : TypeName),
+    typecheck prog ctx e = inr t ->
     prog / ctx |- e : t.
 ```
 
 and one theorem stating that the typecheck function is complete:
 
-```
-Theorem typecheck_complete : forall (prog : ProgramSkeleton) (ctx : Ctxt) (e : Expr) (tn : TypeName),
+```coq
+Theorem typecheck_complete : forall (prog : skeleton) (ctx : ctxt) (e : expr) (tn : TypeName),
     prog / ctx |- e : tn ->
-  typecheck' prog ctx e = Some tn
+    typecheck prog ctx e = inr tn.
 ```
 
 ### Eval.v
 
 Contains the definition of values both as a function and inductive relation:
 
-```
-Fixpoint value_b (e : Expr) : bool :
+```coq
+Fixpoint value_b (e : expr) : bool :
 ...
-Inductive value : Expr -> Prop :=
+Inductive value : expr -> Prop :=
 ...
-Fixpoint value_reflect (e : Expr) : reflect (value e) (value_b e).
+Fixpoint value_reflect (e : expr) : reflect (value e) (value_b e).
 ...
 ```
 
 Contains the definition of a single step evaluation function:
 
-```
-Fixpoint one_step_eval (p : Program) (e : Expr) {struct e} : option Expr :=
+```coq
+Fixpoint one_step_eval (p : program) (e : expr) {struct e} : option expr :=
 ```
 
 together with an inductive relation:
 
-```
-Inductive step : Program -> Expr -> Expr -> Prop :=
+```coq
+Inductive step : program -> expr -> expr -> Prop :=
 ...
 where "'[' prog '|-' e '==>' e' ']'" := (step prog e e') : eval_scope.
 ```
@@ -116,12 +118,12 @@ where "'[' prog '|-' e '==>' e' ']'" := (step prog e e') : eval_scope.
 Together with proofs of the correctness and completeness of the inductive relation w.r.t to the
 function:
 
-```
-Theorem eval_complete : forall (prog : Program) (e1 e2 : Expr),
+```coq
+Theorem eval_complete : forall (prog : program) (e1 e2 : expr),
     [ prog |- e1 ==> e2 ] ->
     one_step_eval prog e1 = Some e2.
 	
-Theorem eval_correct : forall (prog : Program) (e e' : Expr),
+Theorem eval_correct : forall (prog : program) (e e' : expr),
     one_step_eval prog e = Some e' ->
     [ prog |- e ==> e' ].
 ```
@@ -130,8 +132,8 @@ Theorem eval_correct : forall (prog : Program) (e e' : Expr),
 
 Contains the proof of the progress property:
 
-```
-Theorem progress : forall (e : Expr) (p : Program) (tc : exists t, (skeleton p) / [] |- e : t),
+```coq
+Theorem progress : forall (e : expr) (p : program) (tc : exists t, (program_skeleton p) / [] |- e : t),
     value_b e = true <-> one_step_eval p e = None.
 ```
 
@@ -139,21 +141,15 @@ Theorem progress : forall (e : Expr) (p : Program) (tc : exists t, (skeleton p) 
 
 Contains the proof of the preservation property:
 
-```
-Theorem preservation : forall (p : Program) (e1 e2 : Expr) (t : TypeName),
-    ((skeleton p) / [] |- e1 : t) ->
+```coq
+Theorem preservation : forall (p : program) (e1 e2 : expr) (t : TypeName),
+    ((program_skeleton p) / [] |- e1 : t) ->
     [ p |- e1 ==> e2 ] ->
-    (skeleton p) / [] |- e2 : t.
+    (program_skeleton p) / [] |- e2 : t.
 ```
 
-### DefuncI.v
+### {D,R}efuncI.v to {D,R}efuncIV.v, Lift..., Inline...
 
-Contains Stage I of the algorithm: the computation of the new program skeleton.
+For an overview of how the definitions and lemmas in these files are used to form our defunctionalization
+and refunctionalization algorithms and prove their properties as stated in our paper, please refer to `Results.v`.
 
-```
-Definition defunctionalizeToSkeleton (p : Program) (n : TypeName) : ProgramSkeleton :=
-```
-
-### DefuncII.v and DefuncIII.v
-
-Contain Stage II of the algorithm: the computation of the new function bodies.

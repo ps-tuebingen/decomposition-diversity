@@ -1,4 +1,4 @@
-module Prettyprinter.PrettyprintExprs
+module Prettyprinter.Expressions
   (
     exprToDoc
   , scopedNameToDoc
@@ -13,7 +13,7 @@ import Control.Monad.Reader (asks)
 
 import Names (TypeName, ScopedName(..), QName, Name)
 import HaskellAST
-import Prettyprinter.PrettyprinterDefs
+import Prettyprinter.Definitions
 
 -- | Prettyprint a qualified name
 qNameToDoc :: (String, String) -> PrettyPrinter

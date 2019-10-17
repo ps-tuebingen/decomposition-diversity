@@ -1,4 +1,4 @@
-module Prettyprinter.PrettyprinterDefs where
+module Prettyprinter.Definitions where
 
 import ProgramDef
 

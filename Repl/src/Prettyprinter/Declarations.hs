@@ -1,4 +1,4 @@
-module Prettyprinter.PrettyprintDeclarations where
+module Prettyprinter.Declarations where
 
 import Names (QName, ScopedName, TypeName, Name, unscope)
 import AST
@@ -8,8 +8,8 @@ import Skeleton
 import HaskellAST
 import Renamer.DeBruijnToNamed (deBruijnToNamed')
 import Renamer.CoqToDeBruijn (coqToDeBruijn, lookupArgs)
-import Prettyprinter.PrettyprinterDefs
-import Prettyprinter.PrettyprintExprs
+import Prettyprinter.Definitions
+import Prettyprinter.Expressions
 import Data.Text.Prettyprint.Doc
 import Data.List (intersperse)
 import Data.Maybe (fromMaybe)

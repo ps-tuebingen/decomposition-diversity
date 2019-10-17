@@ -24,9 +24,9 @@ import Skeleton
 import AST
 import Renamer.DeBruijnToNamed (deBruijnToNamed)
 import Renamer.CoqToDeBruijn (coqToDeBruijn)
-import Prettyprinter.PrettyprinterDefs
-import Prettyprinter.PrettyprintExprs
-import Prettyprinter.PrettyprintDeclarations
+import Prettyprinter.Definitions
+import Prettyprinter.Expressions
+import Prettyprinter.Declarations
 
 {--------------------------------------------
 ----Custom Backend for Console---------------

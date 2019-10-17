@@ -9,7 +9,9 @@ import HaskellAST
 import ProgramDef
 import Parser.ParserDefinition
 import Parser.DeclarationParser
-import Renamer
+import Renamer.ParsedToNamed (parsedToNamed)
+import Renamer.NamedToDeBruijn (namedToDeBruijn')
+import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Data.Foldable (foldrM)
 import AssembleSkeleton
 
@@ -40,37 +42,37 @@ addConFunToProgram cfbod (Coq_mkProgram skel fun_bods          cfun_bods_g  cfun
 
 assembleProgramHelper :: Declaration -> Coq_program -> AssembleM Coq_program
 assembleProgramHelper (FunctionD (FNameParse fname) fargs _ ex) pr = do
-  renamedExpr <- rename (program_skeleton pr) ex
-  debruijnExpr <- exprNamed2exprDB' (unmapVarNameParse (fst <$> fargs)) renamedExpr
-  let coqexpr      = exprDB2CoqExpr debruijnExpr
+  renamedExpr <- parsedToNamed (program_skeleton pr) ex
+  debruijnExpr <- namedToDeBruijn' (unmapVarNameParse (fst <$> fargs)) renamedExpr
+  let coqexpr      = deBruijnToCoq debruijnExpr
   let funbod       = (fname, coqexpr) 
   Right $ addFunToProgram funbod pr
 assembleProgramHelper (GenFunD qn fargs cocases) pr = do
   let renameCocase :: (ScopedName, [VarNameParse], ExprParse) -> AssembleM (ScopedName, [String], ExprNamed)
       renameCocase (sn, cargs, expr) = do
-        expr' <- rename (program_skeleton pr) expr
+        expr' <- parsedToNamed (program_skeleton pr) expr
         Right (sn, unmapVarNameParse cargs, expr')
   renamedCoCases <- sequence (renameCocase <$> cocases)
   let changeToNameless (name,args, e) = do
-        e' <- exprNamed2exprDB' (args ++ unmapVarNameParse (fst <$> fargs)) e
+        e' <- namedToDeBruijn' (args ++ unmapVarNameParse (fst <$> fargs)) e
         Right (name, e')
   debruijnCocases <- sequence (changeToNameless <$>  renamedCoCases)
   let cocasesRes :: [(ScopedName, Coq_expr)]
-      cocasesRes = (\(sn, e) -> (sn, exprDB2CoqExpr e)) <$> debruijnCocases
+      cocasesRes = (\(sn, e) -> (sn, deBruijnToCoq e)) <$> debruijnCocases
   Right $ addGenFunToProgram (qn,cocasesRes) pr
 assembleProgramHelper (ConFunD qn fargs _rtype cases) pr = do
   let renameCase :: (ScopedName, [VarNameParse], ExprParse) -> AssembleM (ScopedName, [String], ExprNamed)
       renameCase (sn, dargs, expr) = do
-        expr' <- rename (program_skeleton pr) expr
+        expr' <- parsedToNamed (program_skeleton pr) expr
         Right (sn, unmapVarNameParse dargs, expr')
   renamedCases <- sequence (renameCase <$> cases)
   let changeToNameless (name, args, e) = do
-        e' <- exprNamed2exprDB' (args ++ unmapVarNameParse (fst <$> fargs)) e
+        e' <- namedToDeBruijn' (args ++ unmapVarNameParse (fst <$> fargs)) e
         Right (name, e')
   debruijnCases <- sequence (changeToNameless <$> renamedCases)
   let
     casesRes :: [(ScopedName, Coq_expr)]
-    casesRes = (\(sn, e) -> (sn, exprDB2CoqExpr e)) <$> debruijnCases
+    casesRes = (\(sn, e) -> (sn, deBruijnToCoq e)) <$> debruijnCases
   Right $ addConFunToProgram (qn, casesRes) pr
 assembleProgramHelper _                 pr = Right pr
 

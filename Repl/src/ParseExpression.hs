@@ -7,8 +7,9 @@ module ParseExpression
 import Skeleton
 import AST
 import ProgramDef
-import HaskellAST
-import Renamer
+import Renamer.ParsedToNamed (parsedToNamed)
+import Renamer.NamedToDeBruijn (namedToDeBruijn)
+import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Parser.ParserDefinition
 import Parser.ExpressionParser
 import Parser.DeclarationParser
@@ -20,9 +21,9 @@ parseExpression sk str = do
   case parsedStr of
     Left err -> Left err
     Right expr -> do
-      renamedExpr <- rename sk expr
-      namelessExpr <- exprNamed2exprDB renamedExpr
-      Right (exprDB2CoqExpr namelessExpr)
+      renamedExpr <- parsedToNamed sk expr
+      namelessExpr <- namedToDeBruijn renamedExpr
+      Right (deBruijnToCoq namelessExpr)
 
 parseProgram :: String -> Either String Coq_program
 parseProgram str = do

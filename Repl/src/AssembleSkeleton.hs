@@ -6,7 +6,7 @@ module AssembleSkeleton
 import Names (TypeName, ScopedName, QName, Name)
 import Skeleton
 import Parser.ParserDefinition (TypeNameParse(..), FNameParse(..), VarNameParse(..))
-import Parser.DeclarationParser (Declaration(..))
+import Parser.Declarations (Declaration(..))
 
 type DataType = (TypeName,[(ScopedName, [TypeName])])
 type CoDataType = (TypeName,[((ScopedName, [TypeName]),TypeName)])

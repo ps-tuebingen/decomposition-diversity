@@ -1,4 +1,4 @@
-module Parser.DeclarationParser
+module Parser.Declarations
   (
     Declaration(..)
   , declarationsP

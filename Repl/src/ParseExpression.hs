@@ -12,7 +12,7 @@ import Renamer.NamedToDeBruijn (namedToDeBruijn)
 import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Parser.ParserDefinition
 import Parser.ExpressionParser
-import Parser.DeclarationParser
+import Parser.Declarations
 import AssembleProgram
 
 parseExpression :: Coq_skeleton -> String -> Either String Coq_expr

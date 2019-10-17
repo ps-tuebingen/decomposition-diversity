@@ -9,7 +9,6 @@ import Control.Monad.Reader
 
 import Parser.ParserDefinition
 import Names (ScopedName, TypeName, unscope, ScopedName(..))
-import AST
 import Skeleton
 import HaskellAST
 

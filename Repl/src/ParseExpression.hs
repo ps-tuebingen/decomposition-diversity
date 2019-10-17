@@ -8,7 +8,7 @@ import Skeleton
 import AST
 import ProgramDef
 import HaskellAST
-import Renamer.Renamer
+import Renamer.ParsedToNamed
 import Renamer.DeBruijnToCoq
 import Parser.ParserDefinition
 import Parser.ExpressionParser

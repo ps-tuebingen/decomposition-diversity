@@ -1,4 +1,4 @@
-module Renamer.Renamer
+module Renamer.ParsedToNamed
   (
     rename
   ) where

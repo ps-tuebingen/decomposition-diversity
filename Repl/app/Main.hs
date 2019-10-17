@@ -1,16 +1,17 @@
-{-# LANGUAGE DeriveFunctor #-}
+
 module Main where
 
 import System.Exit (exitSuccess)
 import System.Console.Repline
 import System.Console.Haskeline
 import System.Directory
-import Control.Monad (filterM)
+import Control.Monad (filterM,when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Except (lift)
 import Data.List (isPrefixOf, isSuffixOf)
 import Data.Default
+import           Data.Maybe                     ( fromMaybe )
 import Text.Read (readMaybe)
 import System.IO.Error(tryIOError)
 import Control.Monad.Trans
@@ -41,7 +42,7 @@ data CommandMode
   = NormalMode
   | MultilineExprMode String
   | MultilineDeclarationMode String
-  
+
 data ReplState = ReplState
   {
     currentProgram      :: Coq_program
@@ -82,7 +83,7 @@ getPrettyPrinterConfig = do
   myprogram <- extractFromReplState currentProgram
   ppConfig <- extractFromReplState prettyPrinterConfig
   return (ppConfig { program = myprogram })
-  
+
 -- | Wrap a Repl () action which should only be executed when in normal mode.
 -- This handles the case when a ":<cmd>" is entered while in multiline mode.
 execIfInNormalMode :: Repl () -> Repl ()
@@ -185,7 +186,7 @@ showProgram _ = execIfInNormalMode $ do
 --------------------------------------------------------------------------------
 
 defuncProg :: TypeName -> Coq_program -> Coq_program
-defuncProg tn = inline_cfuns_to_program . reorder_cfuns . (flip defunctionalize_program tn) . (flip lift_comatch_to_program tn)
+defuncProg tn = inline_cfuns_to_program . reorder_cfuns . flip defunctionalize_program tn . flip lift_comatch_to_program tn
 
 -- | Takes one argument and replaces the current Program by its defunctionalized version.
 defunctionalize :: [String] -> Repl ()
@@ -203,14 +204,14 @@ defunctionalize (arg:_) = execIfInNormalMode $ do
 --------------------------------------------------------------------------------
 
 refuncProg :: TypeName -> Coq_program -> Coq_program
-refuncProg tn = inline_gfuns_to_program . reorder_gfuns . (flip refunctionalize_program tn) . (flip lift_match_to_program tn)
+refuncProg tn = inline_gfuns_to_program . reorder_gfuns . flip refunctionalize_program tn . flip lift_match_to_program tn
 
 -- | Takes one argument and replaces the current Program by its defunctionalized version.
 refunctionalize :: [String] -> Repl ()
 refunctionalize [] = execIfInNormalMode $ putReplStrLn "Refunctionalize needs at least one datatype parameter"
 refunctionalize (arg:_) = execIfInNormalMode $ do
   loadedProg <- extractFromReplState currentProgram
-  let newProg = refuncProg arg loadedProg 
+  let newProg = refuncProg arg loadedProg
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
   putReplStrLn "Successfully refunctionalized program!"
 
@@ -228,7 +229,7 @@ load (filepath:_) = execIfInNormalMode $ do
   case mprogstr of
     Nothing -> putReplStrLn $ "File with name " ++ filepath ++ " does not exist."
     Just progstr ->
-        case (parseProgram progstr) of
+        case parseProgram progstr of
           Left err -> putReplStrLn $ "Failed at parsing the file:\n" ++ err
           Right parsedProg -> do
             let tc_errors = typecheckProgram parsedProg
@@ -264,10 +265,10 @@ reload _ = execIfInNormalMode $ do
       case mprogstr of
         Nothing -> putReplStrLn $ "File with name " ++ filepath ++ " does not exist."
         Just progstr ->
-          case (parseProgram progstr) of
+          case parseProgram progstr of
             Left err -> putReplStrLn $ "Failed at parsing the file:\n" ++ err
             Right p -> do
-              lift $ modify $ \replState -> replState {currentProgram = p} 
+              lift $ modify $ \replState -> replState {currentProgram = p}
               putReplStrLn "Successfully reloaded program"
 
 --------------------------------------------------------------------------------
@@ -301,20 +302,18 @@ step :: Int -> Coq_expr -> Repl ()
 step n e = do
   steps <- computeSteps n e
   printSteps (reverse steps)
-  
+
 -- | Try to evaluate an expression to normal form, returning all intermediate steps.
 -- Additional parameter is used to indicate the maximal number of steps.
 computeSteps :: Int -> Coq_expr -> Repl [Coq_expr]
 computeSteps n e = do
   program <- extractFromReplState currentProgram
-  let go n' e acc =
-        if n' <= 0
-        then return acc
-        else if value_b e
-             then return (e:acc)
-             else case one_step_eval program e of
-                    Nothing -> return (e:acc)
-                    Just e' -> go (n' - 1) e' (e:acc)
+  let go n' e acc
+        | n' <= 0   = return acc
+        | value_b e = return (e:acc)
+        | otherwise = case one_step_eval program e of
+                        Nothing -> return (e:acc)
+                        Just e' -> go (n' - 1) e' (e:acc)
   go n e []
 
 -- | Print the list of expressions to console.
@@ -340,26 +339,25 @@ setOptions =  [ "printNat"
               , "printQualifiedNames"
               ]
 
-set_printNat :: Bool -> ReplState -> ReplState
-set_printNat b rs@(ReplState { prettyPrinterConfig = ppConfig}) = rs {prettyPrinterConfig = (ppConfig { printNat = b })}
+setPrintNat :: Bool -> ReplState -> ReplState
+setPrintNat b rs@ReplState { prettyPrinterConfig = ppConfig} = rs {prettyPrinterConfig = (ppConfig { printNat = b })}
 
-set_printDeBruijn :: Bool -> ReplState -> ReplState
-set_printDeBruijn b rs@(ReplState { prettyPrinterConfig = ppConfig}) = rs {prettyPrinterConfig = (ppConfig { printDeBruijn = b })}
+setPrintDeBruijn :: Bool -> ReplState -> ReplState
+setPrintDeBruijn b rs@ReplState { prettyPrinterConfig = ppConfig} = rs {prettyPrinterConfig = (ppConfig { printDeBruijn = b })}
 
-set_printQualifiedNames :: Bool -> ReplState -> ReplState
-set_printQualifiedNames b rs@(ReplState { prettyPrinterConfig = ppConfig}) = rs {prettyPrinterConfig = (ppConfig { printQualifiedNames = b })}
+setPrintQualifiedNames :: Bool -> ReplState -> ReplState
+setPrintQualifiedNames b rs@ReplState { prettyPrinterConfig = ppConfig} = rs {prettyPrinterConfig = (ppConfig { printQualifiedNames = b })}
 
-set :: [String] -> Repl ()
-set args = do
-  if "printNat" `elem` args then lift $ modify (set_printNat True) else return ()
-  if "printDeBruijn" `elem` args then lift $ modify (set_printDeBruijn True) else return ()
-  if "printQualifiedNames" `elem` args then lift $ modify (set_printQualifiedNames True) else return ()
+set, unset :: [String] -> Repl ()
+set = xSet True
+unset = xSet False
 
-unset :: [String] -> Repl ()
-unset args = do
-  if "printNat" `elem` args then lift $ modify (set_printNat False) else return ()
-  if "printDeBruijn" `elem` args then lift $ modify (set_printDeBruijn False) else return ()
-  if "printQualifiedNames" `elem` args then lift $ modify (set_printQualifiedNames False) else return ()
+xSet :: Bool -> [String] -> Repl ()
+xSet b args = do
+  when ("printNat" `elem` args) $ lift $ modify (setPrintNat b)
+  when ("printDeBruijn" `elem` args) $ lift $ modify (setPrintDeBruijn b)
+  when ("printQualifiedNames" `elem` args) $ lift $ modify (setPrintQualifiedNames b)
+
 
 --------------------------------------------------------------------------------
 -- Command
@@ -420,8 +418,7 @@ cmdMultilineDeclMode akk input  =
 
 -- | Process the accumulated and finished multiline declaration input.
 evalMultilineDecl :: String -> Repl ()
-evalMultilineDecl multilineDecl =
-  putReplStrLn multilineDecl
+evalMultilineDecl = putReplStrLn
 
 evalFully :: Coq_program -> Coq_expr -> Maybe Coq_expr
 evalFully p e
@@ -441,7 +438,7 @@ evalExpr e = do
   liftIO $ case val of
     Nothing -> putStrLn "evalFully failed, returning Nothing"
     Just val' -> exprToStringANSI ppConfig val'
-    
+
 --------------------------------------------------------------------------------
 -- Tab Completion
 --------------------------------------------------------------------------------
@@ -469,7 +466,7 @@ cmdCompleter :: Monad m => CompletionFunc m
 cmdCompleter = mkWordCompleter (_simpleComplete f)
   where
     f n = return $ filter (isPrefixOf n) completionlist
-    _simpleComplete f word = f word >>= return . map simpleCompletion
+    _simpleComplete f word = map simpleCompletion <$> f word
 
 -- | Completes ":load" commands with "*.ub" files in current directory.
 loadCompleter :: CompletionFunc InnerRepl
@@ -481,7 +478,7 @@ loadCompleter = mkWordCompleter getLoadCompletions
       let filtered' = filter (".ub" `isSuffixOf`) filtered
       let filtered'' = filter (isPrefixOf s) filtered'
       return $ fmap simpleCompletion filtered''
-      
+
 -- | Completes ":refunctionalize" commands with available datatypes.
 refuncCompleter :: CompletionFunc InnerRepl
 refuncCompleter = mkWordCompleter getRefuncCompletions
@@ -504,7 +501,7 @@ defuncCompleter = mkWordCompleter getDefuncCompletions
 setCompleter :: CompletionFunc InnerRepl
 setCompleter = mkWordCompleter getSetCompletions
   where
-    getSetCompletions s = return $ fmap simpleCompletion $ filter (isPrefixOf s) setOptions      
+    getSetCompletions s = return $ simpleCompletion <$> filter (isPrefixOf s) setOptions
 
 --------------------------------------------------------------------------------
 -- Setting up the Repl
@@ -518,7 +515,7 @@ startState = ReplState
   , lastLoadedFile = Nothing
   , prettyPrinterConfig = def
   }
-                            
+
 splashScreen :: Repl ()
 splashScreen = putReplStrLn $ unlines
   [ "    ____                                             _ __  _           "
@@ -539,7 +536,7 @@ prompt :: Repl String
 prompt = do
   lastLoaded <- extractFromReplState lastLoadedFile
   mode <- getCommandMode
-  let promptPrefix = case lastLoaded of Nothing -> ""; Just fp -> fp
+  let promptPrefix = fromMaybe "" lastLoaded
   case mode of
     NormalMode -> return $ promptPrefix ++ "> "
     MultilineExprMode _ -> return $ promptPrefix ++ ": "
@@ -549,5 +546,4 @@ repl :: IO ()
 repl = evalStateT (evalRepl prompt cmd options (Just ':') completer splashScreen) startState
 
 main :: IO ()
-main = do
-  repl
+main = repl

@@ -23,7 +23,7 @@ import ProgramDef
 import Skeleton
 import AST
 import Renamer.DeBruijnToNamed
-import Renamer.CoqToDeBruijn
+import Renamer.CoqToDeBruijn (coqToDeBruijn)
 import Prettyprinter.PrettyprinterDefs
 import Prettyprinter.PrettyprintExprs
 import Prettyprinter.PrettyprintDeclarations
@@ -96,11 +96,11 @@ docToTerminal doc = do
 
 -- | Prettyprint an expression as a string.
 exprToString :: PrettyPrinterConfig -> Coq_expr -> String
-exprToString ppConfig = docToString . (flip runReader ppConfig) . exprToDoc . exprDB2exprNamed . coqExpr2exprDB (program_skeleton (program ppConfig))
+exprToString ppConfig = docToString . (flip runReader ppConfig) . exprToDoc . exprDB2exprNamed . coqToDeBruijn (program_skeleton (program ppConfig))
 
 -- | Prettyprint an expression and print it on console. Keywords are color highlighted.
 exprToStringANSI :: PrettyPrinterConfig -> Coq_expr -> IO ()
-exprToStringANSI ppConfig = docToTerminal . (flip runReader ppConfig) . exprToDoc . exprDB2exprNamed . coqExpr2exprDB (program_skeleton (program ppConfig))
+exprToStringANSI ppConfig = docToTerminal . (flip runReader ppConfig) . exprToDoc . exprDB2exprNamed . coqToDeBruijn (program_skeleton (program ppConfig))
 
 -- | Prettyprint all datatypes as a string.
 datatypesToString :: PrettyPrinterConfig -> Coq_dts -> Coq_ctors -> String

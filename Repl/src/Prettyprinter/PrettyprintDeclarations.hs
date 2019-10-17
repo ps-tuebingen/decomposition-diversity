@@ -7,7 +7,7 @@ import Skeleton
 
 import HaskellAST
 import Renamer.DeBruijnToNamed
-import Renamer.CoqToDeBruijn
+import Renamer.CoqToDeBruijn (coqToDeBruijn, lookupArgs)
 import Prettyprinter.PrettyprinterDefs
 import Prettyprinter.PrettyprintExprs
 import Data.Text.Prettyprint.Doc
@@ -103,7 +103,7 @@ selectFunctionDeclarations prog =
 renameFunctionDeclaration :: Coq_skeleton -> (Name, [TypeName], TypeName, Coq_expr) -> (Name, [TypeName], TypeName, ExprNamed)
 renameFunctionDeclaration sk (n, argts, rtype, body) = (n, argts, rtype, renamedBody)
   where
-    renamedBody = exprDB2exprNamed' (fromToNames 0 (length argts -1)) (coqExpr2exprDB sk body)
+    renamedBody = exprDB2exprNamed' (fromToNames 0 (length argts -1)) (coqToDeBruijn sk body)
 
 -- | Prettyprint a single function declaration.
 functionDeclarationToDoc :: Name -> [TypeName] -> TypeName -> ExprNamed -> PrettyPrinter
@@ -167,7 +167,7 @@ renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = (qn, argts, rt
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', exprDB2exprNamed' (fromToNames 1 (length (argts ++ argts'))) (coqExpr2exprDB sk e)))
+          (sn, argts', exprDB2exprNamed' (fromToNames 1 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single consumer function declaration.
@@ -236,7 +236,7 @@ renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = (qn, argts, cases')
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', exprDB2exprNamed' (fromToNames 1 (length (argts ++ argts'))) (coqExpr2exprDB sk e)))
+          (sn, argts', exprDB2exprNamed' (fromToNames 1 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single generator function declaration.

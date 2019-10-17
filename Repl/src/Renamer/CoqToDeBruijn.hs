@@ -1,4 +1,8 @@
-module Renamer.CoqToDeBruijn where
+module Renamer.CoqToDeBruijn
+  (
+    coqToDeBruijn
+  , lookupArgs
+  ) where
 
 import HaskellAST
 import AST
@@ -11,7 +15,7 @@ lookupArgs :: ScopedName -> Coq_skeleton -> [TypeName]
 lookupArgs sn sk = case lookup sn (lookupScopedNamesSkeleton sk) of
   Just args -> args
   Nothing -> error "lookupNumArgs: ScopedName not in skeleton"
-  
+
 lookupNumArgs :: ScopedName -> Coq_skeleton -> Int
 lookupNumArgs sn sk =
   let scopedNames = (lookupScopedNamesSkeleton sk) in
@@ -31,34 +35,34 @@ lookupScopedNamesSkeleton sk =
 -- | Convert a Coq_expr into a ExprDB.
 -- An ExprDB contains more information than a Coq_expr, since the locations of
 -- binding occurrances are explicitly marked with "()" in matches and comatches.
-coqExpr2exprDB :: Coq_skeleton -> Coq_expr -> ExprDB
-coqExpr2exprDB _  (E_Var n) =
+coqToDeBruijn :: Coq_skeleton -> Coq_expr -> ExprDB
+coqToDeBruijn _  (E_Var n) =
   Var n
-coqExpr2exprDB sk (E_Constr n args) =
-  Constr n (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_DestrCall n e args) =
-  DestrCall n (coqExpr2exprDB sk e) (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_FunCall n args) =
-  FunCall n (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_GenFunCall n args) =
-  GenFunCall n (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_ConsFunCall n e args) =
-  ConsFunCall n (coqExpr2exprDB sk e) (coqExpr2exprDB sk <$> args)
-coqExpr2exprDB sk (E_Match n e bl cases rtype) =
+coqToDeBruijn sk (E_Constr n args) =
+  Constr n (coqToDeBruijn sk <$> args)
+coqToDeBruijn sk (E_DestrCall n e args) =
+  DestrCall n (coqToDeBruijn sk e) (coqToDeBruijn sk <$> args)
+coqToDeBruijn sk (E_FunCall n args) =
+  FunCall n (coqToDeBruijn sk <$> args)
+coqToDeBruijn sk (E_GenFunCall n args) =
+  GenFunCall n (coqToDeBruijn sk <$> args)
+coqToDeBruijn sk (E_ConsFunCall n e args) =
+  ConsFunCall n (coqToDeBruijn sk e) (coqToDeBruijn sk <$> args)
+coqToDeBruijn sk (E_Match n e bl cases rtype) =
   let
     newBindingList :: [((),ExprDB, TypeName)]
-    newBindingList = (\(e,tn) -> ((),coqExpr2exprDB sk e,tn)) <$> bl
+    newBindingList = (\(e,tn) -> ((),coqToDeBruijn sk e,tn)) <$> bl
     newCases :: [(ScopedName, [()], ExprDB)]
-    newCases = (\(sn,e) -> (sn,replicate (lookupNumArgs sn sk) (),coqExpr2exprDB sk e)) <$> cases
+    newCases = (\(sn,e) -> (sn,replicate (lookupNumArgs sn sk) (),coqToDeBruijn sk e)) <$> cases
   in
-  Match n (coqExpr2exprDB sk e) newBindingList newCases rtype
-coqExpr2exprDB sk (E_CoMatch n bl cocases) =
+  Match n (coqToDeBruijn sk e) newBindingList newCases rtype
+coqToDeBruijn sk (E_CoMatch n bl cocases) =
   let
     newBindingList :: [((),ExprDB, TypeName)]
-    newBindingList = (\(e,tn) -> ((),coqExpr2exprDB sk e,tn)) <$> bl
+    newBindingList = (\(e,tn) -> ((),coqToDeBruijn sk e,tn)) <$> bl
     newCocases :: [(ScopedName, [()], ExprDB)]
-    newCocases = (\(sn,e) -> (sn,replicate (lookupNumArgs sn sk) (),coqExpr2exprDB sk e)) <$> cocases
+    newCocases = (\(sn,e) -> (sn,replicate (lookupNumArgs sn sk) (),coqToDeBruijn sk e)) <$> cocases
   in
   CoMatch n newBindingList newCocases
-coqExpr2exprDB sk (E_Let e1 e2) =
-  Let () (coqExpr2exprDB sk e1) (coqExpr2exprDB sk e2)
+coqToDeBruijn sk (E_Let e1 e2) =
+  Let () (coqToDeBruijn sk e1) (coqToDeBruijn sk e2)

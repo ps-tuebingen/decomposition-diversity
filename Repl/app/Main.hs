@@ -120,8 +120,8 @@ options = [
     ("help",            help)
   , ("quit",            quit)
   , ("showprogram",     showProgram)
-  , ("defunctionalize", defunctionalize)
-  , ("refunctionalize", refunctionalize)
+  , ("constructorize",  constructorize)
+  , ("destructorize",   destructorize)
   , ("load",            load)
   , ("reload",          reload)
   , ("declare",         declare)
@@ -143,8 +143,8 @@ help _ = putReplStrLn $
   ":help                   display this list of commands\n" ++
   ":quit                   exit the repl\n" ++
   ":showprogram            show all declarations\n" ++
-  ":defunctionalize <x>    defunctionalize the current program\n" ++
-  ":refunctionalize <x>    refunctionalize the current program\n" ++
+  ":constructorize <x>     constructorize the current program\n" ++
+  ":destructorize <x>      destructorize the current program\n" ++
   ":load <filename>        load program from file\n" ++
   ":reload                 reload last sucessfully loaded program\n" ++
   ":declare                add a declaration to the program\n" ++
@@ -180,40 +180,40 @@ showProgram _ = execIfInNormalMode $ do
 
 
 --------------------------------------------------------------------------------
--- :defunctionalize <codatatype>
+-- :constructorize <codatatype>
 --
--- Defunctionalizes the given codata type
+-- Constructorizes the given codata type
 --------------------------------------------------------------------------------
 
-defuncProg :: TypeName -> Coq_program -> Coq_program
-defuncProg tn = inline_cfuns_to_program . reorder_cfuns . flip defunctionalize_program tn . flip lift_comatch_to_program tn
+constructorizeProg :: TypeName -> Coq_program -> Coq_program
+constructorizeProg tn = inline_cfuns_to_program . reorder_cfuns . flip defunctionalize_program tn . flip lift_comatch_to_program tn
 
--- | Takes one argument and replaces the current Program by its defunctionalized version.
-defunctionalize :: [String] -> Repl ()
-defunctionalize [] = execIfInNormalMode $ putReplStrLn "Defunctionalize needs at least one codatatype parameter"
-defunctionalize (arg:_) = execIfInNormalMode $ do
+-- | Takes one argument and replaces the current Program by its constructorized version.
+constructorize :: [String] -> Repl ()
+constructorize [] = execIfInNormalMode $ putReplStrLn "Constructorize needs at least one codatatype parameter"
+constructorize (arg:_) = execIfInNormalMode $ do
   loadedProg <- extractFromReplState currentProgram
-  let newProg = defuncProg arg loadedProg
+  let newProg = constructorizeProg arg loadedProg
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
-  putReplStrLn "Successfully defunctionalized program!"
+  putReplStrLn "Successfully constructorized program!"
 
 --------------------------------------------------------------------------------
--- :refunctionalize <codatatype>
+-- :destructorize <codatatype>
 --
--- Refunctionalizes the given data type
+-- Destructorizes the given data type
 --------------------------------------------------------------------------------
 
-refuncProg :: TypeName -> Coq_program -> Coq_program
-refuncProg tn = inline_gfuns_to_program . reorder_gfuns . flip refunctionalize_program tn . flip lift_match_to_program tn
+destructorizeProg :: TypeName -> Coq_program -> Coq_program
+destructorizeProg tn = inline_gfuns_to_program . reorder_gfuns . flip refunctionalize_program tn . flip lift_match_to_program tn
 
--- | Takes one argument and replaces the current Program by its defunctionalized version.
-refunctionalize :: [String] -> Repl ()
-refunctionalize [] = execIfInNormalMode $ putReplStrLn "Refunctionalize needs at least one datatype parameter"
-refunctionalize (arg:_) = execIfInNormalMode $ do
+-- | Takes one argument and replaces the current Program by its constructorized version.
+destructorize :: [String] -> Repl ()
+destructorize [] = execIfInNormalMode $ putReplStrLn "Destructorize needs at least one datatype parameter"
+destructorize (arg:_) = execIfInNormalMode $ do
   loadedProg <- extractFromReplState currentProgram
-  let newProg = refuncProg arg loadedProg
+  let newProg = destructorizeProg arg loadedProg
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
-  putReplStrLn "Successfully refunctionalized program!"
+  putReplStrLn "Successfully destructorized program!"
 
 --------------------------------------------------------------------------------
 -- :load <filename>
@@ -451,8 +451,8 @@ completer = Prefix cmdCompleter prefixCompleters
   where
     prefixCompleters =
       [
-        (":refunctionalize", refuncCompleter)
-      , (":defunctionalize", defuncCompleter)
+        (":destructorize", destructorizeCompleter)
+      , (":constructorize", constructorizeCompleter)
       , (":set", setCompleter)
       , (":unset", setCompleter)
       , (":load", loadCompleter)
@@ -479,20 +479,20 @@ loadCompleter = mkWordCompleter getLoadCompletions
       let filtered'' = filter (isPrefixOf s) filtered'
       return $ fmap simpleCompletion filtered''
 
--- | Completes ":refunctionalize" commands with available datatypes.
-refuncCompleter :: CompletionFunc InnerRepl
-refuncCompleter = mkWordCompleter getRefuncCompletions
+-- | Completes ":destructorize" commands with available datatypes.
+destructorizeCompleter :: CompletionFunc InnerRepl
+destructorizeCompleter = mkWordCompleter getDestructorizeCompletions
   where
-    getRefuncCompletions s = do
+    getDestructorizeCompletions s = do
       dts <- getDatatypes
       let filtered = filter (isPrefixOf s) dts
       return $ fmap simpleCompletion filtered
 
--- | Completes ":defunctionalize" commands with available codatatypes.
-defuncCompleter :: CompletionFunc InnerRepl
-defuncCompleter = mkWordCompleter getDefuncCompletions
+-- | Completes ":constructorize" commands with available codatatypes.
+constructorizeCompleter :: CompletionFunc InnerRepl
+constructorizeCompleter = mkWordCompleter getConstructorizeCompletions
   where
-    getDefuncCompletions s = do
+    getConstructorizeCompletions s = do
       cdts <- getCodatatypes
       let filtered = filter (isPrefixOf s) cdts
       return $ fmap simpleCompletion filtered

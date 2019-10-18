@@ -31,9 +31,9 @@ data SNameParse
   | Global QNameParse
   deriving (Show, Eq)
 
-newtype FNameParse = FNameParse String deriving (Show, Eq)
-newtype VarNameParse = VarNameParse String deriving (Show, Eq)
-newtype TypeNameParse = TypeNameParse String deriving (Show, Eq)
+newtype FNameParse    = FNameParse { unFNameParse :: String } deriving (Show, Eq)
+newtype VarNameParse  = VarNameParse { unVarNameParse :: String } deriving (Show, Eq)
+newtype TypeNameParse = TypeNameParse { unTypeNameParse :: String } deriving (Show, Eq)
 
 -- | Specialized Version of Expr for first stage of parsing.
 -- This is used before disambiguating generator functions and constructors,

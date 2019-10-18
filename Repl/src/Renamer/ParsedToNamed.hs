@@ -39,7 +39,7 @@ getGfunSigs :: RenamerM [Coq_gfun_sig]
 getGfunSigs = do
   skeleton <- ask
   return (skeleton_gfun_sigs_g skeleton)
-  
+
 getCdts :: RenamerM [TypeName]
 getCdts = do
   skeleton <- ask
@@ -76,57 +76,46 @@ rename' (FunCallP (FNameParse f) args) = do
   args' <- sequence (rename' <$> args)
   return (FunCall f args')
 rename' (GeneratorP sn args) = do
+  args' <- sequence (rename' <$> args)
   renameDec <- renameGenerator sn
   case renameDec of
-    Xtor sn -> do
-      args' <- sequence (rename' <$> args)
-      return (Constr sn args')
-    FCall sn -> do
-      args' <- sequence (rename' <$> args)
-      return (GenFunCall sn args')
+    Xtor sn  -> return $ Constr sn args'
+    FCall sn -> return $ GenFunCall sn args'
 rename' (ConsumerP str e args) = do
+  e' <- rename' e
+  args' <- sequence (rename' <$> args)
   renameDec <- renameConsumer str
   case renameDec of
-    Xtor sn -> do
-      e' <- rename' e
-      args' <- sequence (rename' <$> args)
-      return (DestrCall sn e' args')
-    FCall sn -> do
-      e' <- rename' e
-      args' <- sequence (rename' <$> args)
-      return (ConsFunCall sn e' args')
+    Xtor sn  -> return $ DestrCall sn e' args'
+    FCall sn -> return $ ConsFunCall sn e' args'
 rename' (MatchP qn e bl cases (TypeNameParse rtype)) = do
   e' <- rename' e
-  let bltrans :: (VarNameParse, ExprParse, TypeNameParse) -> RenamerM (String, ExprNamed, String)
-      bltrans (VarNameParse s1, expr, TypeNameParse s2) = do
-        expr' <- rename' expr
-        return (s1, expr', s2)
-  let caseTrans :: (SNameParse, [VarNameParse], ExprParse) -> RenamerM (ScopedName, [String], ExprNamed)
-      caseTrans (sn, cargs, expr) = do
-        expr' <- rename' expr
-        return (renameXtorName (fst qn) sn, helper cargs, expr')
-  bl' <- sequence (bltrans <$> bl)
-  cases' <- sequence (caseTrans <$> cases)
+  bl' <- sequence (bindingListTrans <$> bl)
+  cases' <- sequence (caseTrans (fst qn) <$> cases)
   return (Match qn e' bl' cases' rtype)
 rename' (CoMatchP qn bl cocases) = do
-  let bltrans :: (VarNameParse, ExprParse, TypeNameParse) -> RenamerM (String, ExprNamed, String)
-      bltrans (VarNameParse s1, expr, TypeNameParse s2) = do
-        expr' <- rename' expr
-        return (s1, expr', s2)
-  let cocaseTrans :: (SNameParse, [VarNameParse], ExprParse) -> RenamerM (ScopedName, [String], ExprNamed)
-      cocaseTrans (n, dargs, expr) = do
-        expr' <- rename' expr
-        return (renameXtorName (fst qn) n, helper dargs, expr')
-  bl' <- sequence (bltrans <$> bl)
-  cocases' <- sequence (cocaseTrans <$> cocases)
+  bl' <- sequence (bindingListTrans <$> bl)
+  cocases' <- sequence (caseTrans (fst qn) <$> cocases)
   return (CoMatch qn bl' cocases')
 rename' (LetP (VarNameParse str) e1 e2) = do
   e1' <- rename' e1
   e2' <- rename' e2
   return (Let str e1' e2')
 
-helper :: [VarNameParse] -> [String]
-helper = fmap (\(VarNameParse x) -> x)
+-- | Rename one case of a PatternMatch/CoPatternMatch
+caseTrans :: TypeName
+          -> (SNameParse, [VarNameParse], ExprParse)
+          -> RenamerM (ScopedName, [String], ExprNamed)
+caseTrans tn (sn, cargs, expr) = do
+  expr' <- rename' expr
+  return (renameXtorName tn sn, unVarNameParse <$> cargs, expr')
+
+-- | Rename one element of a bindingList
+bindingListTrans :: (VarNameParse, ExprParse, TypeNameParse)
+        -> RenamerM (String, ExprNamed, String)
+bindingListTrans (varName, expr, typeName) = do
+  expr' <- rename' expr
+  return (unVarNameParse varName, expr', unTypeNameParse typeName)
 
 -- Renaming decision
 data RenameDec = Xtor ScopedName | FCall ScopedName

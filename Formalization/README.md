@@ -2,6 +2,7 @@
 
 ## Dependencies
 
+![Dependencies](Results.png)
 
 ## Overview of the Formalization
 

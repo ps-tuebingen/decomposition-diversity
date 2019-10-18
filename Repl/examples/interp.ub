@@ -21,12 +21,12 @@ codata Exp where
 
 generator function Cons(v: Val, env: Env) : Env :=
   cocase Index(i) => 
-    match Nat:Lookup i using v1 := v : Val, e := env : Env returning Env with
+    match Nat:Lookup i using v1 := v : Val, e := env : Env returning Val with
        case Zero() => v1
        case Succ(n) => e.Index(n) 
        
 generator function Nil() : Env :=
-  cocase Index(i) => Zero()
+  cocase Index(i) => Nil().Index(i)
          
 generator function Var(n: Nat) : Exp :=
   cocase Eval(env) => env.Index(n)
@@ -42,7 +42,7 @@ generator function Fun(body: Exp): Exp :=
         
 generator function ResVar(n: Nat) : Val :=
   cocase Apply(arg) => ResApp(ResVar(n),arg)
-  cocase Reify(lvl) => Var(sub(lvl,n))       
+  cocase Reify(lvl) => Var(lvl.Sub(n))
   
 generator function ResApp(v1: Val, v2: Val) : Val := 
   cocase Apply(v3) => ResApp(ResApp(v1,v2),v3)

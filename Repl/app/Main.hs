@@ -122,6 +122,7 @@ options = [
   , ("showprogram",     showProgram)
   , ("constructorize",  constructorize)
   , ("destructorize",   destructorize)
+  , ("transpose",       transpose)
   , ("load",            load)
   , ("reload",          reload)
   , ("declare",         declare)
@@ -214,6 +215,29 @@ destructorize (arg:_) = execIfInNormalMode $ do
   let newProg = destructorizeProg arg loadedProg
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
   putReplStrLn "Successfully destructorized program!"
+
+--------------------------------------------------------------------------------
+-- :destructorize <codatatype>
+--
+-- Destructorizes the given data type
+--------------------------------------------------------------------------------
+
+transpose :: [String] -> Repl ()
+transpose [] = execIfInNormalMode $ putReplStrLn "Transposition needs at least one datatype parameter"
+transpose (arg:_) = execIfInNormalMode $ do
+  loadedProg <- extractFromReplState currentProgram
+  dts <- lift getDatatypes
+  cdts <- lift getCodatatypes
+  case (arg `elem` dts, arg `elem` cdts) of
+    (True, _) -> do
+        let newProg = destructorizeProg arg loadedProg
+        lift $ modify $ \replState -> (replState {currentProgram =  newProg})
+        putReplStrLn "Successfully destructorized program!"
+    (False, True) -> do
+        let newProg = constructorizeProg arg loadedProg
+        lift $ modify $ \replState -> (replState {currentProgram =  newProg})
+        putReplStrLn "Successfully constructorized program!"
+    _ -> putReplStrLn $ "Transposing program with type " ++ arg ++ " failed"
 
 --------------------------------------------------------------------------------
 -- :load <filename>
@@ -453,6 +477,7 @@ completer = Prefix cmdCompleter prefixCompleters
       [
         (":destructorize", destructorizeCompleter)
       , (":constructorize", constructorizeCompleter)
+      , (":transpose", transposeCompleter)
       , (":set", setCompleter)
       , (":unset", setCompleter)
       , (":load", fileCompleter)
@@ -484,6 +509,16 @@ constructorizeCompleter = mkWordCompleter getConstructorizeCompletions
     getConstructorizeCompletions s = do
       cdts <- getCodatatypes
       let filtered = filter (isPrefixOf s) cdts
+      return $ fmap simpleCompletion filtered
+
+-- | Completes ":constructorize" commands with available codatatypes.
+transposeCompleter :: CompletionFunc InnerRepl
+transposeCompleter = mkWordCompleter getTransposeCompletions
+  where
+    getTransposeCompletions s = do
+      dts <- getDatatypes
+      cdts <- getCodatatypes
+      let filtered = filter (isPrefixOf s) (dts ++ cdts)
       return $ fmap simpleCompletion filtered
 
 -- | Completes ":set" and ":unset" commands with available options.

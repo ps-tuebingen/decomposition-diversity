@@ -20,6 +20,8 @@ Help is available by typing `:help` inside the REPL.
   In the expression, you may also write numerals for values of type `Nat` (when such a type exists and represents the usual Peano numbers).
 - To constructorize the currently loaded program, type `:constructorize <x>`, where `<x>` is the codatatype to be constructorized.
 - To destructorize the currently loaded program, type `:destructorize <x>`, where `<x>` is the datatype to be destructorized.
+- To transpose the currently loaded program, type `:transpose <x>`, where `<x>` is the xDatatype to be transpose.
+  The REPL will figure out which direction is required when tranposing.
 
 _Missing:_
  - _declare_

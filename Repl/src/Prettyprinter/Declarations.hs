@@ -173,7 +173,7 @@ renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = (qn, argts, rt
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', deBruijnToNamed' (fromToNames 1 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
+          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single consumer function declaration.
@@ -242,7 +242,7 @@ renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = (qn, argts, cases')
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', deBruijnToNamed' (fromToNames 1 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
+          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single generator function declaration.

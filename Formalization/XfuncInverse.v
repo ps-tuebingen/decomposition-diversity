@@ -5,10 +5,10 @@ Require Import Coq.omega.Omega.
 Import ListNotations.
 (* Project related imports *)
 Require Import LiftComatch.
-Require Import DefuncI.
-Require Import DefuncII.
-Require Import RefuncI.
-Require Import RefuncII.
+Require Import CtorizeI.
+Require Import CtorizeII.
+Require Import DtorizeI.
+Require Import DtorizeII.
 Require Import BodyTypeDefs.
 Require Import ProgramDef.
 Require Import Typechecker.
@@ -22,8 +22,8 @@ Require Import UtilsSkeleton.
 Require Import Subterm.
 Require Import SwitchIndices.
 Require Import UtilsNamesUnique.
-Require Import DefuncIII.
-Require Import RefuncIII.
+Require Import CtorizeIII.
+Require Import DtorizeIII.
 
 Fixpoint map_with_index' {A B} (f : nat -> A -> B) (l : list A) (n : nat) : list B :=
   match l with
@@ -640,27 +640,27 @@ Definition program_cfun_bods (p : program) :=
   map (fun x => (local (fst x), snd x)) (program_cfun_bods_l p).
 
 
-Definition defunc_term_helper (p : skeleton) (tn : TypeName) (dname : ScopedName) (cname : ScopedName) (e : expr) : expr :=
+Definition ctorize_term_helper (p : skeleton) (tn : TypeName) (dname : ScopedName) (cname : ScopedName) (e : expr) : expr :=
   let dlength := lookup_dtor p dname >>= fun x => Some (length (snd (fst x))) in
   match dlength with
-  | Some n => DefuncIII.switch_indices_aux p cname n tn e
+  | Some n => CtorizeIII.switch_indices_aux p cname n tn e
   | None => e
   end.
 
-Definition refunc_term_helper (p : skeleton) (tn : TypeName) (dname : ScopedName) (cname : ScopedName) (e : expr) : expr :=
+Definition dtorize_term_helper (p : skeleton) (tn : TypeName) (dname : ScopedName) (cname : ScopedName) (e : expr) : expr :=
   let clength := lookup_ctor_sig p cname >>= fun x => Some (length (snd x)) in
   match clength with
-  | Some n => RefuncIII.switch_indices_aux p dname n tn e
+  | Some n => DtorizeIII.switch_indices_aux p dname n tn e
   | None => e
   end.
 
 
-Lemma derefunc_exp_inverse : forall p tn e
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
-  (DefuncCdt2 : In tn (skeleton_cdts (program_skeleton p)))
+Lemma ctorize_dtorize_exp_inverse : forall p tn e
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt2 : In tn (skeleton_cdts (program_skeleton p)))
   (InProg : In e (map snd (flat_map snd (program_gfun_bods p))) \/ In e (map snd (flat_map snd (program_cfun_bods p)))
      \/ In e (map snd (program_fun_bods p))),
-  refunctionalize_expr tn (defunctionalize_expr tn e) = e.
+  destructorize_expr tn (constructorize_expr tn e) = e.
 Proof with eauto.
 intros.
 assert (Sub : exists e', (In e' (map snd (flat_map snd (program_gfun_bods p))) \/
@@ -669,7 +669,7 @@ assert (Sub : exists e', (In e' (map snd (flat_map snd (program_gfun_bods p))) \
 clear InProg.
 induction e using expr_strong_ind; intros...
 - cbn. case_eq (eq_TypeName tn (fst (unscope n))); intros.
-  + exfalso. unfold not in DefuncCdt.
+  + exfalso. unfold not in CtorizeCdt.
     assert (exists cargs, In (n, cargs) (skeleton_ctors (program_skeleton p))).
     { destruct Sub. destruct H1. destruct H1; [ | destruct H1 ].
       - rewrite in_map_iff in H1. destruct H1. destruct H1.
@@ -717,7 +717,7 @@ induction e using expr_strong_ind; intros...
         pose proof (subterm_typechecks _ _ _ _ _ Typ H2) as TypSub.
         clear - TypSub. destruct TypSub. destruct H. inversion H; subst. exists cargs...
     }
-    destruct H1. eapply DefuncCdt...
+    destruct H1. eapply CtorizeCdt...
     cbn. rewrite eq_TypeName_eq in H0...
   + f_equal. clear - H Sub.
     assert (exists ls', ls' ++ ls = ls). { exists []... }
@@ -770,14 +770,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -793,14 +793,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -819,14 +819,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -842,14 +842,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)) as SigInDt.
             unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
             apply SigInDt in H8. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - DefuncCdt2 H8.
+            clear - CtorizeCdt2 H8.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -858,7 +858,7 @@ induction e using expr_strong_ind; intros...
       rewrite Forall_forall in TypF. apply TypF in H3. destruct H3 as [qn [args [t [SigLookup Typ]]]].
       subst. cbn in *. destruct x0. cbn in *.
       pose proof (subterm_typechecks _ _ _ _ _ Typ H2) as TypSub.
-      clear - DefuncCdt2 TypSub H0. destruct TypSub. destruct H. inversion H; subst.
+      clear - CtorizeCdt2 TypSub H0. destruct TypSub. destruct H. inversion H; subst.
       -- pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)) as SigInDt.
          unfold cfun_sigs_in_dts in SigInDt. rewrite Forall_forall in SigInDt.
          apply SigInDt in H6. cbn in *. rewrite eq_TypeName_eq in *. subst.
@@ -934,12 +934,12 @@ induction e using expr_strong_ind; intros...
     constructor.
 Qed.
 
-Lemma redefunc_exp_inverse : forall p tn e
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
-  (RefuncDt2 : In tn (skeleton_dts (program_skeleton p)))
+Lemma rectorize_exp_inverse : forall p tn e
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt2 : In tn (skeleton_dts (program_skeleton p)))
   (InProg : In e (map snd (flat_map snd (program_cfun_bods p))) \/ In e (map snd (flat_map snd (program_gfun_bods p)))
      \/ In e (map snd (program_fun_bods p))),
-  defunctionalize_expr tn (refunctionalize_expr tn e) = e.
+  constructorize_expr tn (destructorize_expr tn e) = e.
 Proof with eauto.
 intros.
 assert (Sub : exists e', ((In e' (map snd (flat_map snd (program_cfun_bods p))) \/
@@ -967,7 +967,7 @@ induction e using expr_strong_ind; intros...
       apply in_or_app. right. left...
     * apply IHls0... clear - H0. destruct H0. exists (x++[a]). rewrite <- app_assoc...
 - cbn. case_eq (eq_TypeName tn (fst (unscope n))); intros.
-  + exfalso. unfold not in RefuncDt.
+  + exfalso. unfold not in DtorizeDt.
     assert (exists dargs t, In (n, dargs, t) (skeleton_dtors (program_skeleton p))).
     { destruct Sub. destruct H1. destruct H1; [ | destruct H1 ].
       - rewrite in_map_iff in H1. destruct H1. destruct H1.
@@ -1015,7 +1015,7 @@ induction e using expr_strong_ind; intros...
         pose proof (subterm_typechecks _ _ _ _ _ Typ H2) as TypSub.
         clear - TypSub. destruct TypSub. destruct H. inversion H; subst. exists dargs...
     }
-    do 2 destruct H1. eapply RefuncDt...
+    do 2 destruct H1. eapply DtorizeDt...
     cbn. rewrite eq_TypeName_eq in H0...
   + clear - H Sub IHe. f_equal.
     * apply IHe. destruct Sub. destruct H0. exists x. split... eapply subterm_switch_Trans... constructor.
@@ -1067,14 +1067,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -1090,14 +1090,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -1116,14 +1116,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -1139,14 +1139,14 @@ induction e using expr_strong_ind; intros...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
          ++ pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)) as SigInCdt.
             unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
             apply SigInCdt in H7. cbn in *. rewrite eq_TypeName_eq in *. subst.
-            clear - RefuncDt2 H7.
+            clear - DtorizeDt2 H7.
             pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
             unfold dts_cdts_disjoint in Disj. unfold not in Disj. apply Disj with (t:=fst qn0).
             split...
@@ -1155,7 +1155,7 @@ induction e using expr_strong_ind; intros...
       rewrite Forall_forall in TypF. apply TypF in H3. destruct H3 as [qn [args [t [SigLookup Typ]]]].
       subst. cbn in *. destruct x0. cbn in *.
       pose proof (subterm_typechecks _ _ _ _ _ Typ H2) as TypSub.
-      clear - RefuncDt2 TypSub H0. destruct TypSub. destruct H. inversion H; subst.
+      clear - DtorizeDt2 TypSub H0. destruct TypSub. destruct H. inversion H; subst.
       -- pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)) as SigInCdt.
          unfold gfun_sigs_in_cdts in SigInCdt. rewrite Forall_forall in SigInCdt.
          apply SigInCdt in H5. cbn in *. rewrite eq_TypeName_eq in *. subst.
@@ -1364,9 +1364,9 @@ induction e0 using expr_strong_ind; intros.
     eapply Sub_Trans_Let_2...
 Qed.
 
-Lemma switch_indices_helper_defunc_exchange : forall p tn c d e,
-  switch_indices_helper (defunctionalize_expr tn e) p c d 0 =
-  defunctionalize_expr tn (switch_indices_helper e p c d 0).
+Lemma switch_indices_helper_ctorize_exchange : forall p tn c d e,
+  switch_indices_helper (constructorize_expr tn e) p c d 0 =
+  constructorize_expr tn (switch_indices_helper e p c d 0).
 Proof with eauto.
 intros. generalize 0. induction e using expr_strong_ind; intros.
 - cbn - [ Nat.ltb ]. case_eq (v <? n); intros... case_eq (v <? n + d); intros...
@@ -1386,9 +1386,9 @@ intros. generalize 0. induction e using expr_strong_ind; intros.
 - cbn. f_equal...
 Qed.
 
-Lemma switch_indices_helper_refunc_exchange : forall p tn c d e,
-  switch_indices_helper (refunctionalize_expr tn e) p c d 0 =
-  refunctionalize_expr tn (switch_indices_helper e p c d 0).
+Lemma switch_indices_helper_dtorize_exchange : forall p tn c d e,
+  switch_indices_helper (destructorize_expr tn e) p c d 0 =
+  destructorize_expr tn (switch_indices_helper e p c d 0).
 Proof with eauto.
 intros. generalize 0. induction e using expr_strong_ind; intros.
 - cbn - [ Nat.ltb ]. case_eq (v <? n); intros... case_eq (v <? n + d); intros...
@@ -1409,9 +1409,9 @@ intros. generalize 0. induction e using expr_strong_ind; intros.
 Qed.
 
 Lemma ctor_gsig_length : forall p tn a c g
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
   (InGbods: In a (map fst (program_gfun_bods_for_type tn p))),
-  lookup_ctor_sig (defunctionalize_to_skeleton p tn) a = Some c ->
+  lookup_ctor_sig (constructorize_to_skeleton p tn) a = Some c ->
   Some g = lookup_gfun_sig_scoped (program_skeleton p) a ->
   length (snd g) = length (snd c).
 Proof with eauto.
@@ -1433,7 +1433,7 @@ unfold lookup_gfun_sig_scoped in H0. destruct a.
       destruct H0; subst.
       -- destruct H; subst; [ inversion H | ]... apply (in_map fst) in H. cbn in *. exfalso...
       -- destruct H; subst; [| apply IHg]... apply (in_map fst) in H0. cbn in *. exfalso...
-  + apply DefuncCdt in H. cbn in H. rewrite in_map_iff in InGbods. destruct InGbods as [x [qEq xIn]].
+  + apply CtorizeCdt in H. cbn in H. rewrite in_map_iff in InGbods. destruct InGbods as [x [qEq xIn]].
     unfold program_gfun_bods_for_type in xIn. rewrite filter_In in xIn. destruct xIn as [_ xEq].
     rewrite eq_TypeName_eq in xEq. subst tn. rewrite qEq in H. cbn in H. exfalso...
 - unfold lookup_gfun_sig_g in H0. unfold lookup_gfun_sig_x in H0. symmetry in H0.
@@ -1452,17 +1452,17 @@ unfold lookup_gfun_sig_scoped in H0. destruct a.
       -- destruct H; subst; [ inversion H | ]... apply (in_map fst) in H. cbn in *. exfalso...
       -- destruct H; subst; [| apply IHg]... apply (in_map fst) in H0. cbn in *. exfalso...
     * rewrite in_map_iff in H. do 2 destruct H. inversion H.
-  + apply DefuncCdt in H. cbn in H. rewrite in_map_iff in InGbods. destruct InGbods as [x [qEq xIn]].
+  + apply CtorizeCdt in H. cbn in H. rewrite in_map_iff in InGbods. destruct InGbods as [x [qEq xIn]].
     unfold program_gfun_bods_for_type in xIn. rewrite filter_In in xIn. destruct xIn as [_ xEq].
     rewrite eq_TypeName_eq in xEq. subst tn. rewrite qEq in H. cbn in H. exfalso...
 Qed.
 
 Lemma ctor_gsig_length' : forall p tn a c g
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
-  (RefuncDt2 : In tn (skeleton_dts (program_skeleton p)))
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt2 : In tn (skeleton_dts (program_skeleton p)))
   (CtorType : fst (unscope (fst c)) = tn),
   lookup_ctor_sig (program_skeleton p) a = Some c ->
-  Some g = lookup_gfun_sig_scoped (refunctionalize_to_skeleton p tn) a ->
+  Some g = lookup_gfun_sig_scoped (destructorize_to_skeleton p tn) a ->
   length (snd c) = length (snd g).
 Proof with eauto.
 intros. unfold lookup_ctor_sig in H. apply find_some in H.
@@ -1508,11 +1508,11 @@ unfold lookup_gfun_sig_scoped in H0. destruct a.
 Qed.
 
 Lemma dtor_csig_length : forall p tn a d c0
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
-  (DefuncCdt2 : In tn (skeleton_cdts (program_skeleton p)))
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt2 : In tn (skeleton_cdts (program_skeleton p)))
   (DtorType : fst (unscope (fst (fst d))) = tn),
   lookup_dtor (program_skeleton p) a = Some d ->
-  Some c0 = lookup_cfun_sig_scoped (defunctionalize_to_skeleton p tn) a ->
+  Some c0 = lookup_cfun_sig_scoped (constructorize_to_skeleton p tn) a ->
   length (snd (fst d)) = length (snd (fst c0)).
 Proof with eauto.
 intros. unfold lookup_dtor in H. apply find_some in H.
@@ -1558,9 +1558,9 @@ unfold lookup_cfun_sig_scoped in H0. destruct a.
 Qed.
 
 Lemma dtor_csig_length' : forall p tn a d c0
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
   (InCbods: In a (map fst (program_cfun_bods_for_type tn p))),
-  lookup_dtor (refunctionalize_to_skeleton p tn) a = Some d ->
+  lookup_dtor (destructorize_to_skeleton p tn) a = Some d ->
   Some c0 = lookup_cfun_sig_scoped (program_skeleton p) a ->
   length (snd (fst c0)) = length (snd (fst d)).
 Proof with eauto.
@@ -1582,7 +1582,7 @@ unfold lookup_cfun_sig_scoped in H0. destruct a.
       destruct H0; subst.
       -- destruct H; subst; [ inversion H | ]... do 2 apply (in_map fst) in H. cbn in *. rewrite map_map in H. exfalso...
       -- destruct H; subst; [| apply IHc]... do 2 apply (in_map fst) in H0. cbn in *. rewrite map_map in H0. exfalso...
-  + apply RefuncDt in H. cbn in H. rewrite in_map_iff in InCbods. destruct InCbods as [x [qEq xIn]].
+  + apply DtorizeDt in H. cbn in H. rewrite in_map_iff in InCbods. destruct InCbods as [x [qEq xIn]].
     unfold program_cfun_bods_for_type in xIn. rewrite filter_In in xIn. destruct xIn as [_ xEq].
     rewrite eq_TypeName_eq in xEq. subst tn. rewrite qEq in H. cbn in H. exfalso...
 - unfold lookup_cfun_sig_g in H0. unfold lookup_cfun_sig_x in H0. symmetry in H0.
@@ -1601,7 +1601,7 @@ unfold lookup_cfun_sig_scoped in H0. destruct a.
       -- destruct H; subst; [ inversion H | ]... do 2 apply (in_map fst) in H. cbn in *. rewrite map_map in H. exfalso...
       -- destruct H; subst; [| apply IHc]... do 2 apply (in_map fst) in H0. cbn in *. rewrite map_map in H0. exfalso...
     * rewrite in_map_iff in H. do 2 destruct H. inversion H.
-  + apply RefuncDt in H. cbn in H. rewrite in_map_iff in InCbods. destruct InCbods as [x [qEq xIn]].
+  + apply DtorizeDt in H. cbn in H. rewrite in_map_iff in InCbods. destruct InCbods as [x [qEq xIn]].
     unfold program_cfun_bods_for_type in xIn. rewrite filter_In in xIn. destruct xIn as [_ xEq].
     rewrite eq_TypeName_eq in xEq. subst tn. rewrite qEq in H. cbn in H. exfalso...
 Qed.
@@ -1609,7 +1609,7 @@ Qed.
 Lemma no_gfun_no_ctor : forall p tn a
   (InGbods : In a (map fst (program_gfun_bods_for_type tn p))),
   lookup_gfun_sig_scoped (program_skeleton p) a = None ->
-  lookup_ctor_sig (defunctionalize_to_skeleton p tn) a = None.
+  lookup_ctor_sig (constructorize_to_skeleton p tn) a = None.
 Proof with eauto.
 intros. unfold lookup_gfun_sig_scoped in H. cbn in *. unfold computeNewDatatype. destruct a.
 - unfold lookup_gfun_sig_l in H. unfold lookup_gfun_sig_x in H.
@@ -1651,7 +1651,7 @@ Qed.
 Lemma no_cfun_no_dtor : forall p tn a
   (InCbods : In a (map fst (program_cfun_bods_for_type tn p))),
   lookup_cfun_sig_scoped (program_skeleton p) a = None ->
-  lookup_dtor (refunctionalize_to_skeleton p tn) a = None.
+  lookup_dtor (destructorize_to_skeleton p tn) a = None.
 Proof with eauto.
 intros. unfold lookup_cfun_sig_scoped in H. cbn in *. unfold computeNewCoDatatype. destruct a.
 - unfold lookup_cfun_sig_l in H. unfold lookup_cfun_sig_x in H.
@@ -2346,17 +2346,17 @@ Qed.
 
 Lemma switch_indices_aux_inverse : forall p tn a a0 e c d a'
   (InProg : In (a0, e) a' /\ In (a, a') (program_gfun_bods_for_type tn p))
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
-  (DefuncCdt2 : In tn (skeleton_cdts (program_skeleton p))),
-  lookup_ctor_sig (defunctionalize_to_skeleton p tn) a = Some c ->
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt2 : In tn (skeleton_cdts (program_skeleton p))),
+  lookup_ctor_sig (constructorize_to_skeleton p tn) a = Some c ->
   lookup_dtor (program_skeleton p) a0 = Some d ->
   tn = fst (unscope a0) ->
-  switch_indices_aux (defunctionalize_to_skeleton p tn) a0 (length (snd c)) tn
-  (DefuncIII.switch_indices_aux (program_skeleton p) a (length (snd (fst d))) tn e) = e.
+  switch_indices_aux (constructorize_to_skeleton p tn) a0 (length (snd c)) tn
+  (CtorizeIII.switch_indices_aux (program_skeleton p) a (length (snd (fst d))) tn e) = e.
 Proof with eauto.
-intros. unfold switch_indices_aux. unfold DefuncIII.switch_indices_aux.
+intros. unfold switch_indices_aux. unfold CtorizeIII.switch_indices_aux.
 unfold switch_indices_cfun.
-remember (lookup_cfun_sig_scoped (defunctionalize_to_skeleton p tn) a0) as csig.
+remember (lookup_cfun_sig_scoped (constructorize_to_skeleton p tn) a0) as csig.
 destruct csig.
 - cbn. unfold switch_indices. remember (lookup_gfun_sig_scoped (program_skeleton p) a) as gsig.
   destruct gsig.
@@ -2366,10 +2366,10 @@ destruct csig.
     2:{ eapply dtor_csig_length... unfold lookup_dtor in H0. apply find_some in H0.
       destruct H0. rewrite eq_ScopedName_eq in H2. subst...
     }
-    rewrite switch_indices_helper_defunc_exchange.
+    rewrite switch_indices_helper_ctorize_exchange.
     rewrite switch_indices_helper_inverse.
     2:{ intros. eapply E_Var_lt... }
-    apply derefunc_exp_inverse with (p:=p)...
+    apply ctorize_dtorize_exp_inverse with (p:=p)...
     clear - InProg. left. rewrite in_map_iff. exists (a0,e). split... rewrite in_flat_map.
     exists (a,a'). destruct InProg. split...
     unfold program_gfun_bods_for_type in H0. rewrite filter_In in H0. destruct H0...
@@ -2380,7 +2380,7 @@ destruct csig.
   + exfalso. clear - H0 Heqcsig H1. rename Heqcsig into H. unfold lookup_cfun_sig_scoped in H.
     destruct a0.
     * unfold lookup_cfun_sig_l in H. unfold lookup_cfun_sig_x in H. cbn in H.
-      unfold DefuncI.new_cfunsigs_l in H. symmetry in H.
+      unfold CtorizeI.new_cfunsigs_l in H. symmetry in H.
       apply find_none with (x:=(unscope (fst (fst d)), snd (fst d), snd d)) in H.
       2:{ apply in_or_app. left. rewrite in_map_iff. unfold cfunsigs_mapfun. exists d.
         split. { destruct d. destruct p0... }
@@ -2392,7 +2392,7 @@ destruct csig.
       rewrite eq_ScopedName_eq in H2. rewrite <- H2 in H. cbn in H. rewrite eq_QName_refl in H.
       discriminate.
     * unfold lookup_cfun_sig_g in H. unfold lookup_cfun_sig_x in H. cbn in H.
-      unfold DefuncI.new_cfunsigs_l in H. symmetry in H.
+      unfold CtorizeI.new_cfunsigs_l in H. symmetry in H.
       apply find_none with (x:=(unscope (fst (fst d)), snd (fst d), snd d)) in H.
       2:{ apply in_or_app. left. rewrite in_map_iff. unfold cfunsigs_mapfun. exists d.
         split. { destruct d. destruct p0... }
@@ -2403,7 +2403,7 @@ destruct csig.
       cbn in H. unfold lookup_dtor in H0. apply find_some in H0. destruct H0.
       rewrite eq_ScopedName_eq in H2. rewrite <- H2 in H. cbn in H. rewrite eq_QName_refl in H.
       discriminate.
-  + cbn. apply derefunc_exp_inverse with (p:=p)...
+  + cbn. apply ctorize_dtorize_exp_inverse with (p:=p)...
     destruct InProg. left. rewrite in_map_iff. eexists. split.
     2:{ rewrite in_flat_map. exists (a,a'). split... unfold program_gfun_bods_for_type in H3.
       rewrite filter_In in H3. destruct H3...
@@ -2413,17 +2413,17 @@ Qed.
 
 Lemma switch_indices_aux_inverse' : forall p tn a a0 e c d a'
   (InProg : In (a0, e) a' /\ In (a, a') (program_cfun_bods_for_type tn p))
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
-  (RefuncDt2 : In tn (skeleton_dts (program_skeleton p))),
-  lookup_dtor (refunctionalize_to_skeleton p tn) a = Some d ->
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt2 : In tn (skeleton_dts (program_skeleton p))),
+  lookup_dtor (destructorize_to_skeleton p tn) a = Some d ->
   lookup_ctor_sig (program_skeleton p) a0 = Some c ->
   tn = fst (unscope a0) ->
-  DefuncIII.switch_indices_aux (refunctionalize_to_skeleton p tn) a0 (length (snd (fst d))) tn
+  CtorizeIII.switch_indices_aux (destructorize_to_skeleton p tn) a0 (length (snd (fst d))) tn
   (switch_indices_aux (program_skeleton p) a (length (snd c)) tn e) = e.
 Proof with eauto.
-intros. unfold switch_indices_aux. unfold DefuncIII.switch_indices_aux.
+intros. unfold switch_indices_aux. unfold CtorizeIII.switch_indices_aux.
 unfold switch_indices.
-remember (lookup_gfun_sig_scoped (refunctionalize_to_skeleton p tn) a0) as gsig.
+remember (lookup_gfun_sig_scoped (destructorize_to_skeleton p tn) a0) as gsig.
 destruct gsig.
 - cbn. unfold switch_indices_cfun. remember (lookup_cfun_sig_scoped (program_skeleton p) a) as csig.
   destruct csig.
@@ -2433,10 +2433,10 @@ destruct gsig.
     2:{ eapply ctor_gsig_length'... unfold lookup_ctor_sig in H0. apply find_some in H0.
       destruct H0. rewrite eq_ScopedName_eq in H2. subst...
     }
-    rewrite switch_indices_helper_refunc_exchange.
+    rewrite switch_indices_helper_dtorize_exchange.
     rewrite switch_indices_helper_inverse.
     2:{ intros. eapply E_Var_lt'... }
-    apply redefunc_exp_inverse with (p:=p)...
+    apply rectorize_exp_inverse with (p:=p)...
     clear - InProg. left. rewrite in_map_iff. exists (a0,e). split... rewrite in_flat_map.
     exists (a,a'). destruct InProg. split...
     unfold program_cfun_bods_for_type in H0. rewrite filter_In in H0. destruct H0...
@@ -2447,7 +2447,7 @@ destruct gsig.
   + exfalso. clear - H0 Heqgsig H1. rename Heqgsig into H. unfold lookup_gfun_sig_scoped in H.
     destruct a0.
     * unfold lookup_gfun_sig_l in H. unfold lookup_gfun_sig_x in H. cbn in H.
-      unfold DefuncI.new_gfunsigs_l in H. symmetry in H.
+      unfold CtorizeI.new_gfunsigs_l in H. symmetry in H.
       apply find_none with (x:=(unscope (fst c), snd c)) in H.
       2:{ apply in_or_app. left. rewrite in_map_iff. unfold gfunsigs_mapfun. exists c.
         split. { destruct c... }
@@ -2459,7 +2459,7 @@ destruct gsig.
       rewrite eq_ScopedName_eq in H2. rewrite <- H2 in H. cbn in H. rewrite eq_QName_refl in H.
       discriminate.
     * unfold lookup_gfun_sig_g in H. unfold lookup_gfun_sig_x in H. cbn in H.
-      unfold DefuncI.new_gfunsigs_l in H. symmetry in H.
+      unfold CtorizeI.new_gfunsigs_l in H. symmetry in H.
       apply find_none with (x:=(unscope (fst c), snd c)) in H.
       2:{ apply in_or_app. left. rewrite in_map_iff. unfold gfunsigs_mapfun. exists c.
         split. { destruct c... }
@@ -2470,7 +2470,7 @@ destruct gsig.
       cbn in H. unfold lookup_ctor_sig in H0. apply find_some in H0. destruct H0.
       rewrite eq_ScopedName_eq in H2. rewrite <- H2 in H. cbn in H. rewrite eq_QName_refl in H.
       discriminate.
-  + cbn. apply redefunc_exp_inverse with (p:=p)...
+  + cbn. apply rectorize_exp_inverse with (p:=p)...
     destruct InProg. left. rewrite in_map_iff. eexists. split.
     2:{ rewrite in_flat_map. exists (a,a'). split... unfold program_cfun_bods_for_type in H3.
       rewrite filter_In in H3. destruct H3... }
@@ -2559,16 +2559,16 @@ rewrite eq_TypeName_eq in H1. subst. cbn. apply in_app_or in H0. destruct H0.
   rewrite eq_TypeName_eq in Done...
 Qed.
 
-Lemma derefunc_helper_inverse : forall p tn a a0 e a'
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
-  (DefuncCdt2 : In tn (skeleton_cdts (program_skeleton p))),
+Lemma ctorize_dtorize_helper_inverse : forall p tn a a0 e a'
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt2 : In tn (skeleton_cdts (program_skeleton p))),
   In (a0,e) a' ->
   In (a,a') (program_gfun_bods_for_type tn p) ->
-  refunc_term_helper (defunctionalize_to_skeleton p tn) tn a0
-    a (defunc_term_helper (program_skeleton p) tn a0 a e) = e.
+  dtorize_term_helper (constructorize_to_skeleton p tn) tn a0
+    a (ctorize_term_helper (program_skeleton p) tn a0 a e) = e.
 Proof with eauto.
-intros. unfold refunc_term_helper. unfold defunc_term_helper.
-case_eq (lookup_ctor_sig (defunctionalize_to_skeleton p tn) a); intros.
+intros. unfold dtorize_term_helper. unfold ctorize_term_helper.
+case_eq (lookup_ctor_sig (constructorize_to_skeleton p tn) a); intros.
 - cbn. case_eq (lookup_dtor (program_skeleton p) a0); intros.
   + cbn. apply switch_indices_aux_inverse with (a':=a')...
     clear - H H0. eapply in_gbods_tn...
@@ -2600,8 +2600,8 @@ case_eq (lookup_ctor_sig (defunctionalize_to_skeleton p tn) a); intros.
       destruct H4. apply H1 in H4. cbn in H4. rewrite eq_ScopedName_refl in H4. discriminate.
 - cbn. case_eq (lookup_dtor (program_skeleton p) a0); intros...
   exfalso. clear - H H0 H1. unfold lookup_ctor_sig in H1.
-  assert (find (fun x => eq_ScopedName a x) (map fst (skeleton_ctors (defunctionalize_to_skeleton p tn))) = None).
-  { clear - H1. generalize dependent (skeleton_ctors (defunctionalize_to_skeleton p tn)).
+  assert (find (fun x => eq_ScopedName a x) (map fst (skeleton_ctors (constructorize_to_skeleton p tn))) = None).
+  { clear - H1. generalize dependent (skeleton_ctors (constructorize_to_skeleton p tn)).
     induction c; intros... cbn. cbn in H1. destruct (eq_ScopedName a (fst a0)); try discriminate...
   }
   pose proof (find_none _ _ H2). cbn in H3. clear H1 H2.
@@ -2626,16 +2626,16 @@ case_eq (lookup_ctor_sig (defunctionalize_to_skeleton p tn) a); intros.
   intros...
 Qed.
 
-Lemma redefunc_helper_inverse : forall p tn a a0 e a'
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
-  (RefuncDt2 : In tn (skeleton_dts (program_skeleton p))),
+Lemma rectorize_helper_inverse : forall p tn a a0 e a'
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt2 : In tn (skeleton_dts (program_skeleton p))),
   In (a0,e) a' ->
   In (a,a') (program_cfun_bods_for_type tn p) ->
-  defunc_term_helper (refunctionalize_to_skeleton p tn) tn a
-    a0 (refunc_term_helper (program_skeleton p) tn a a0 e) = e.
+  ctorize_term_helper (destructorize_to_skeleton p tn) tn a
+    a0 (dtorize_term_helper (program_skeleton p) tn a a0 e) = e.
 Proof with eauto.
-intros. unfold refunc_term_helper. unfold defunc_term_helper.
-case_eq (lookup_dtor (refunctionalize_to_skeleton p tn) a); intros.
+intros. unfold dtorize_term_helper. unfold ctorize_term_helper.
+case_eq (lookup_dtor (destructorize_to_skeleton p tn) a); intros.
 - cbn. case_eq (lookup_ctor_sig (program_skeleton p) a0); intros.
   + cbn. apply switch_indices_aux_inverse' with (a':=a')...
     clear - H H0. eapply in_cbods_tn...
@@ -2667,8 +2667,8 @@ case_eq (lookup_dtor (refunctionalize_to_skeleton p tn) a); intros.
       destruct H4. apply H1 in H4. cbn in H4. rewrite eq_ScopedName_refl in H4. discriminate.
 - cbn. case_eq (lookup_ctor_sig (program_skeleton p) a0); intros...
   exfalso. clear - H H0 H1. unfold lookup_dtor in H1.
-  assert (find (fun x => eq_ScopedName a x) (map fst (map fst (skeleton_dtors (refunctionalize_to_skeleton p tn)))) = None).
-  { clear - H1. generalize dependent (skeleton_dtors (refunctionalize_to_skeleton p tn)).
+  assert (find (fun x => eq_ScopedName a x) (map fst (map fst (skeleton_dtors (destructorize_to_skeleton p tn)))) = None).
+  { clear - H1. generalize dependent (skeleton_dtors (destructorize_to_skeleton p tn)).
     induction d; intros... cbn. cbn in H1. destruct (eq_ScopedName a (fst (fst a0))); try discriminate...
   }
   pose proof (find_none _ _ H2). cbn in H3. clear H1 H2.
@@ -2764,8 +2764,8 @@ Lemma transpose_gfbods : forall p tn l l' (f : skeleton -> TypeName -> ScopedNam
   (GL : global_before_local_dtors (skeleton_dtors (program_skeleton p))),
   l = map (fun x => map (fun y => f (program_skeleton p) tn (fst y) (fst x) (snd y)) (snd x)) l' ->
   l' = filter (fun x : ScopedName * gfun_bod => eq_TypeName (fst (unscope (fst x))) tn)
-              (DefuncIII.globalize_aux (program_gfun_bods_g p) ++
-               DefuncIII.localize_aux (program_gfun_bods_l p)) ->
+              (CtorizeIII.globalize_aux (program_gfun_bods_g p) ++
+               CtorizeIII.localize_aux (program_gfun_bods_l p)) ->
   n = length (filter (cfunsigs_filterfun_g tn) (skeleton_dtors (program_skeleton p)) ++
     filter (cfunsigs_filterfun_l tn) (skeleton_dtors (program_skeleton p))) ->
   transpose l n =
@@ -2807,7 +2807,7 @@ induction l as [| l l0]; intros.
     rewrite filter_In in H0. destruct H0. apply in_app_or in H0. destruct H0.
     * pose proof (program_gfun_bods_typecheck_g p) as TypG.
       unfold gfun_bods_g_typecheck in TypG. rewrite Forall_forall in TypG.
-      unfold DefuncIII.globalize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
+      unfold CtorizeIII.globalize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
       apply TypG in H2. clear TypG. destruct H2 as [qn [args [SigLookup Typ]]].
       inversion Typ; subst. unfold lookup_dtors in H9. unfold QName in *. unfold gfun_bod in *.
       case_eq (filter (eq_TypeName (fst (fst x0))) (skeleton_cdts (program_skeleton p))); intros;
@@ -2831,7 +2831,7 @@ induction l as [| l l0]; intros.
       rewrite <- filter_compose. rewrite H...
     * pose proof (program_gfun_bods_typecheck_l p) as TypL.
       unfold gfun_bods_l_typecheck in TypL. rewrite Forall_forall in TypL.
-      unfold DefuncIII.localize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
+      unfold CtorizeIII.localize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
       apply TypL in H2. clear TypL. destruct H2 as [qn [args [SigLookup Typ]]].
       inversion Typ; subst. unfold lookup_dtors in H9. unfold QName in *. unfold gfun_bod in *.
       case_eq (filter (eq_TypeName (fst (fst x0))) (skeleton_cdts (program_skeleton p))); intros;
@@ -2928,7 +2928,7 @@ induction l as [| l l0]; intros.
               assert (length (filter (cfunsigs_filterfun_g tn) (skeleton_dtors (program_skeleton p))) <= length (snd p1)).
               2:{ omega... }
               clear H aEq. rewrite filter_In in H5. destruct H5. apply in_app_or in H. destruct H.
-              - unfold DefuncIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold CtorizeIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_gfun_bods_typecheck_g p). unfold gfun_bods_g_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [LookupSig Typ]]].
                 inversion Typ; subst. apply listTypeDeriv'_lemma in H9. rewrite Nat.eqb_eq in H9.
@@ -2941,7 +2941,7 @@ induction l as [| l l0]; intros.
                 induction d... simpl. destruct a. destruct p0. destruct s.
                 + case_eq (eq_TypeName (fst (unscope (local q))) (fst (fst x))); intros; simpl; omega.
                 + rewrite eq_TypeName_symm. simpl. case_eq (eq_TypeName (fst q) (fst (fst x))); intros; simpl; omega.
-              - unfold DefuncIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold CtorizeIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_gfun_bods_typecheck_l p). unfold gfun_bods_l_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [LookupSig Typ]]].
                 inversion Typ; subst. apply listTypeDeriv'_lemma in H9. rewrite Nat.eqb_eq in H9.
@@ -2978,7 +2978,7 @@ induction l as [| l l0]; intros.
               rewrite filter_In in H. destruct H. apply in_app_or in H.
               pose proof (skeleton_cdts_dtor_names_unique (program_skeleton p)) as Uniq. destruct H.
               - pose proof (program_gfun_bods_typecheck_g p) as TypG. unfold gfun_bods_g_typecheck in TypG.
-                rewrite Forall_forall in TypG. unfold DefuncIII.globalize_aux in H.
+                rewrite Forall_forall in TypG. unfold CtorizeIII.globalize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypG in H2.
                 destruct H2 as [qn [args [LookupSig Typ]]]. inversion Typ; subst.
                 simpl. unfold lookup_dtors in H10. unfold gfun_bod in *. case_eq (filter (eq_TypeName (fst (fst x)))
@@ -3073,7 +3073,7 @@ induction l as [| l l0]; intros.
                   destruct a. destruct p0. simpl in *. destruct s; try discriminate. simpl in *.
                   rewrite eq_QName_refl in H. discriminate.
               - pose proof (program_gfun_bods_typecheck_l p) as TypL. unfold gfun_bods_l_typecheck in TypL.
-                rewrite Forall_forall in TypL. unfold DefuncIII.localize_aux in H.
+                rewrite Forall_forall in TypL. unfold CtorizeIII.localize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypL in H2.
                 destruct H2 as [qn [args [LookupSig Typ]]]. inversion Typ; subst.
                 simpl. unfold lookup_dtors in H10. unfold gfun_bod in *. case_eq (filter (eq_TypeName (fst (fst x)))
@@ -3219,7 +3219,7 @@ induction l as [| l l0]; intros.
               { rewrite <- aEq. unfold not. intros. discriminate. }
               apply nth_error_Some in H. rename H into Aux.
               clear aEq. rewrite filter_In in H5. destruct H5. apply in_app_or in H. destruct H.
-              - unfold DefuncIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold CtorizeIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_gfun_bods_typecheck_g p). unfold gfun_bods_g_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [LookupSig Typ]]].
                 inversion Typ; subst. apply listTypeDeriv'_lemma in H9. rewrite Nat.eqb_eq in H9.
@@ -3232,7 +3232,7 @@ induction l as [| l l0]; intros.
                 unfold global_before_local_dtors in GL. erewrite filter_ext; [ rewrite <- (GL (fst (fst x))) |].
                 2:{ intros. destruct a. destruct p0... }
                 rewrite app_length. rewrite Nat.add_comm. apply Nat.add_le_lt_mono...
-              - unfold DefuncIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold CtorizeIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_gfun_bods_typecheck_l p). unfold gfun_bods_l_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [LookupSig Typ]]].
                 inversion Typ; subst. apply listTypeDeriv'_lemma in H9. rewrite Nat.eqb_eq in H9.
@@ -3270,7 +3270,7 @@ induction l as [| l l0]; intros.
               rewrite filter_In in H. destruct H. apply in_app_or in H.
               pose proof (skeleton_cdts_dtor_names_unique (program_skeleton p)) as Uniq. destruct H.
               - pose proof (program_gfun_bods_typecheck_g p) as TypG. unfold gfun_bods_g_typecheck in TypG.
-                rewrite Forall_forall in TypG. unfold DefuncIII.globalize_aux in H.
+                rewrite Forall_forall in TypG. unfold CtorizeIII.globalize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypG in H2.
                 destruct H2 as [qn [args [LookupSig Typ]]]. inversion Typ; subst.
                 simpl. unfold lookup_dtors in H10. unfold gfun_bod in *. case_eq (filter (eq_TypeName (fst (fst x)))
@@ -3365,7 +3365,7 @@ induction l as [| l l0]; intros.
                   destruct a. destruct p0. simpl in *. destruct s; try discriminate. simpl in *.
                   rewrite eq_QName_refl in H. discriminate.
               - pose proof (program_gfun_bods_typecheck_l p) as TypL. unfold gfun_bods_l_typecheck in TypL.
-                rewrite Forall_forall in TypL. unfold DefuncIII.localize_aux in H.
+                rewrite Forall_forall in TypL. unfold CtorizeIII.localize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypL in H2.
                 destruct H2 as [qn [args [LookupSig Typ]]]. inversion Typ; subst.
                 simpl. unfold lookup_dtors in H10. unfold gfun_bod in *. case_eq (filter (eq_TypeName (fst (fst x)))
@@ -3499,20 +3499,20 @@ Lemma transpose_cfbods : forall p tn l l' (f : skeleton -> TypeName -> ScopedNam
   (GL : global_before_local_ctors (skeleton_ctors (program_skeleton p))),
   l = map (fun x => map (fun y => f (program_skeleton p) tn (fst x) (fst y) (snd y)) (snd x)) l' ->
   l' = filter (fun x : ScopedName * gfun_bod => eq_TypeName (fst (unscope (fst x))) tn)
-              (RefuncIII.globalize_aux (program_cfun_bods_g p) ++
-               RefuncIII.localize_aux (program_cfun_bods_l p)) ->
+              (DtorizeIII.globalize_aux (program_cfun_bods_g p) ++
+               DtorizeIII.localize_aux (program_cfun_bods_l p)) ->
   n = length (filter (gfunsigs_filterfun_g tn) (skeleton_ctors (program_skeleton p)) ++
     filter (gfunsigs_filterfun_l tn) (skeleton_ctors (program_skeleton p))) ->
   transpose l n =
     map (map (fun x => snd (snd x)))
       (map
-        (fun x0 => map (RefuncIII.map_alternative_for_filter (unscope (fst x0)) c)
+        (fun x0 => map (DtorizeIII.map_alternative_for_filter (unscope (fst x0)) c)
                        (map (fun x => (unscope (fst x), snd x))
                          (map (fun x => (fst x, map (fun y => (fst y, f (program_skeleton p) tn (fst x) (fst y) (snd y))) (snd x))) l')))
         (filter (gfunsigs_filterfun_g tn) (skeleton_ctors (program_skeleton p)))) ++
     map (map (fun x => snd (snd x)))
       (map
-        (fun x0 => map (RefuncIII.map_alternative_for_filter_l (unscope (fst x0)) c)
+        (fun x0 => map (DtorizeIII.map_alternative_for_filter_l (unscope (fst x0)) c)
                        (map (fun x => (unscope (fst x), snd x))
                          (map (fun x => (fst x, map (fun y => (fst y, f (program_skeleton p) tn (fst x) (fst y) (snd y))) (snd x))) l')))
         (filter (gfunsigs_filterfun_l tn) (skeleton_ctors (program_skeleton p)))).
@@ -3542,7 +3542,7 @@ induction l as [| l l0]; intros.
     rewrite filter_In in H0. destruct H0. apply in_app_or in H0. destruct H0.
     * pose proof (program_cfun_bods_typecheck_g p) as TypG.
       unfold cfun_bods_g_typecheck in TypG. rewrite Forall_forall in TypG.
-      unfold RefuncIII.globalize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
+      unfold DtorizeIII.globalize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
       apply TypG in H2. clear TypG. destruct H2 as [qn [args [t [SigLookup Typ]]]].
       inversion Typ; subst.
       (**)
@@ -3570,7 +3570,7 @@ induction l as [| l l0]; intros.
       rewrite <- filter_compose. rewrite H...
     * pose proof (program_cfun_bods_typecheck_l p) as TypL.
       unfold cfun_bods_l_typecheck in TypL. rewrite Forall_forall in TypL.
-      unfold RefuncIII.localize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
+      unfold DtorizeIII.localize_aux in H0. rewrite in_map_iff in H0. do 2 destruct H0.
       apply TypL in H2. clear TypL. destruct H2 as [qn [args [t [SigLookup Typ]]]].
       inversion Typ; subst.
       (**)
@@ -3671,7 +3671,7 @@ induction l as [| l l0]; intros.
               assert (length (filter (gfunsigs_filterfun_g tn) (skeleton_ctors (program_skeleton p))) <= length (snd p1)).
               2:{ omega... }
               clear H aEq. rewrite filter_In in H5. destruct H5. apply in_app_or in H. destruct H.
-              - unfold RefuncIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold DtorizeIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_cfun_bods_typecheck_g p). unfold cfun_bods_g_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -3688,7 +3688,7 @@ induction l as [| l l0]; intros.
                 induction c... simpl. destruct a. destruct s.
                 + case_eq (eq_TypeName (fst (unscope (local q))) (fst (fst x))); intros; simpl; omega.
                 + rewrite eq_TypeName_symm. simpl. case_eq (eq_TypeName (fst q) (fst (fst x))); intros; simpl; omega.
-              - unfold RefuncIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold DtorizeIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_cfun_bods_typecheck_l p). unfold cfun_bods_l_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -3729,7 +3729,7 @@ induction l as [| l l0]; intros.
               rewrite filter_In in H. destruct H. apply in_app_or in H.
               pose proof (skeleton_dts_ctor_names_unique (program_skeleton p)) as Uniq. destruct H.
               - pose proof (program_cfun_bods_typecheck_g p) as TypG. unfold cfun_bods_g_typecheck in TypG.
-                rewrite Forall_forall in TypG. unfold RefuncIII.globalize_aux in H.
+                rewrite Forall_forall in TypG. unfold DtorizeIII.globalize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypG in H2.
                 destruct H2 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -3828,7 +3828,7 @@ induction l as [| l l0]; intros.
                   destruct a. simpl in *. destruct s; try discriminate. simpl in *.
                   rewrite eq_QName_refl in H. discriminate.
               - pose proof (program_cfun_bods_typecheck_l p) as TypL. unfold cfun_bods_l_typecheck in TypL.
-                rewrite Forall_forall in TypL. unfold RefuncIII.localize_aux in H.
+                rewrite Forall_forall in TypL. unfold DtorizeIII.localize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypL in H2.
                 destruct H2 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -3978,7 +3978,7 @@ induction l as [| l l0]; intros.
               { rewrite <- aEq. unfold not. intros. discriminate. }
               apply nth_error_Some in H. rename H into Aux.
               clear aEq. rewrite filter_In in H5. destruct H5. apply in_app_or in H. destruct H.
-              - unfold RefuncIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold DtorizeIII.globalize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_cfun_bods_typecheck_g p). unfold cfun_bods_g_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -3995,7 +3995,7 @@ induction l as [| l l0]; intros.
                 unfold global_before_local_ctors in GL. erewrite filter_ext; [ rewrite <- (GL (fst (fst x))) |].
                 2:{ intros. destruct a... }
                 rewrite app_length. rewrite Nat.add_comm. apply Nat.add_le_lt_mono...
-              - unfold RefuncIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
+              - unfold DtorizeIII.localize_aux in H. rewrite in_map_iff in H. do 2 destruct H. subst. simpl.
                 pose proof (program_cfun_bods_typecheck_l p). unfold cfun_bods_l_typecheck in H.
                 rewrite Forall_forall in H. apply H in H1. clear H. destruct H1 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -4037,7 +4037,7 @@ induction l as [| l l0]; intros.
               rewrite filter_In in H. destruct H. apply in_app_or in H.
               pose proof (skeleton_dts_ctor_names_unique (program_skeleton p)) as Uniq. destruct H.
               - pose proof (program_cfun_bods_typecheck_g p) as TypG. unfold cfun_bods_g_typecheck in TypG.
-                rewrite Forall_forall in TypG. unfold RefuncIII.globalize_aux in H.
+                rewrite Forall_forall in TypG. unfold DtorizeIII.globalize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypG in H2.
                 destruct H2 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -4136,7 +4136,7 @@ induction l as [| l l0]; intros.
                   destruct a. simpl in *. destruct s; try discriminate. simpl in *.
                   rewrite eq_QName_refl in H. discriminate.
               - pose proof (program_cfun_bods_typecheck_l p) as TypL. unfold cfun_bods_l_typecheck in TypL.
-                rewrite Forall_forall in TypL. unfold RefuncIII.localize_aux in H.
+                rewrite Forall_forall in TypL. unfold DtorizeIII.localize_aux in H.
                 rewrite in_map_iff in H. do 2 destruct H. apply TypL in H2.
                 destruct H2 as [qn [args [t [LookupSig Typ]]]].
                 inversion Typ; subst.
@@ -4272,17 +4272,17 @@ Qed.
 
 
 
-Lemma defunc_is_matrix_transpose : forall p tn P1 P2 P3 P4 P5 pr
+Lemma ctorize_is_matrix_transpose : forall p tn P1 P2 P3 P4 P5 pr
   (GL : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
   (Nonempty : program_gfun_bods_for_type tn p <> []),
-  pr = defunctionalize_program p tn P1 P2 P3 P4 P5 ->
+  pr = constructorize_program p tn P1 P2 P3 P4 P5 ->
   program_cfun_bods_for_type tn pr =
     (read_cfuns_from_matrix (transpose_matrix (read_gfuns_into_matrix
-      (map (fun x => (fst x, map (fun y => (fst y, defunc_term_helper (program_skeleton p) tn (fst y) (fst x) (snd y))) (snd x)))
+      (map (fun x => (fst x, map (fun y => (fst y, ctorize_term_helper (program_skeleton p) tn (fst y) (fst x) (snd y))) (snd x)))
          (program_gfun_bods_for_type tn p))))).
 Proof with eauto.
 intros. subst. unfold program_cfun_bods_for_type. simpl. clear - GL Nonempty.
-unfold DefuncIII.new_cfun_bods_g. unfold DefuncIII.new_cfun_bods_l.
+unfold CtorizeIII.new_cfun_bods_g. unfold CtorizeIII.new_cfun_bods_l.
 rewrite map_app. rewrite map_app. repeat rewrite filter_app.
 match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = []) end.
 - pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
@@ -4667,7 +4667,7 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
     }
     rewrite map_app. f_equal.
     * repeat rewrite map_map. apply map_ext_in. intros.
-      unfold DefuncIII.globalize_aux. unfold DefuncIII.localize_aux.
+      unfold CtorizeIII.globalize_aux. unfold CtorizeIII.localize_aux.
       match goal with [|- ?lhs' = _] => set (lhs:=lhs') end.
       rewrite combine_fst_snd with (ps:=lhs).
       clear p0 l H. rename H0 into H.
@@ -4724,9 +4724,9 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction g.
-            ** simpl. unfold DefuncIII.switch_indices_aux. unfold switch_indices.
+            ** simpl. unfold CtorizeIII.switch_indices_aux. unfold switch_indices.
                destruct (lookup_gfun_sig_scoped (program_skeleton p) (global (fst a)))...
-            ** simpl. unfold defunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold ctorize_term_helper. destruct a0. simpl. destruct s.
                --- rewrite IHg...
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
@@ -4742,16 +4742,16 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction g.
-            ** simpl. unfold DefuncIII.switch_indices_aux. unfold switch_indices.
+            ** simpl. unfold CtorizeIII.switch_indices_aux. unfold switch_indices.
                destruct (lookup_gfun_sig_scoped (program_skeleton p) (local (fst a)))...
-            ** simpl. unfold defunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold ctorize_term_helper. destruct a0. simpl. destruct s.
                --- rewrite IHg...
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
                    change (global q0) with (fst (fst (global q0, l, t))).
                    rewrite in_dtors_lookup_dtor...
     * repeat rewrite map_map. apply map_ext_in. intros.
-      unfold DefuncIII.globalize_aux. unfold DefuncIII.localize_aux.
+      unfold CtorizeIII.globalize_aux. unfold CtorizeIII.localize_aux.
       match goal with [|- ?lhs' = _] => set (lhs:=lhs') end.
       rewrite combine_fst_snd with (ps:=lhs).
       clear p0 l H. rename H0 into H.
@@ -4808,9 +4808,9 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction g.
-            ** simpl. unfold DefuncIII.switch_indices_aux. unfold switch_indices.
+            ** simpl. unfold CtorizeIII.switch_indices_aux. unfold switch_indices.
                destruct (lookup_gfun_sig_scoped (program_skeleton p) (global (fst a)))...
-            ** simpl. unfold defunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold ctorize_term_helper. destruct a0. simpl. destruct s.
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
                    change (local q0) with (fst (fst (local q0, l, t))).
@@ -4827,9 +4827,9 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction g.
-            ** simpl. unfold DefuncIII.switch_indices_aux. unfold switch_indices.
+            ** simpl. unfold CtorizeIII.switch_indices_aux. unfold switch_indices.
                destruct (lookup_gfun_sig_scoped (program_skeleton p) (local (fst a)))...
-            ** simpl. unfold defunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold ctorize_term_helper. destruct a0. simpl. destruct s.
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
                    change (local q0) with (fst (fst (local q0, l, t))).
@@ -4883,16 +4883,16 @@ intros. generalize dependent l2. generalize dependent n. induction l1; intros.
 - destruct n... destruct l2... cbn. f_equal...
 Qed.
 
-Lemma defunc_is_matrix_transpose' : forall p tn P1 P2 P3 P4 P5 pr
+Lemma ctorize_is_matrix_transpose' : forall p tn P1 P2 P3 P4 P5 pr
   (GL : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
   (Nonempty : program_gfun_bods_for_type tn p <> []),
-  pr = defunctionalize_program p tn P1 P2 P3 P4 P5 ->
+  pr = constructorize_program p tn P1 P2 P3 P4 P5 ->
   program_cfun_bods_for_type tn pr =
-    map (fun x => (fst x, map (fun y => (fst y, defunc_term_helper (program_skeleton p) tn (fst x) (fst y) (snd y))) (snd x)))
+    map (fun x => (fst x, map (fun y => (fst y, ctorize_term_helper (program_skeleton p) tn (fst x) (fst y) (snd y))) (snd x)))
       (read_cfuns_from_matrix (transpose_matrix (read_gfuns_into_matrix
         (program_gfun_bods_for_type tn p)))).
 Proof with eauto.
-intros. erewrite defunc_is_matrix_transpose... clear.
+intros. erewrite ctorize_is_matrix_transpose... clear.
 remember (program_gfun_bods_for_type tn p) as l. intros. cbn.
 rewrite map_map. cbn. destruct l...
 repeat rewrite map_map. cbn [snd]. cbn [map]. cbn [snd].
@@ -4915,7 +4915,7 @@ assert (exists l', l'++l1 = p0::l /\ l'++l1 = program_gfun_bods_for_type tn p).
 { exists []... }
 clear Heql1 Heql. rename H into Heql1.
 clear - Heql0 Heql1.
-generalize (defunc_term_helper (program_skeleton p) tn) as f. intros.
+generalize (ctorize_term_helper (program_skeleton p) tn) as f. intros.
 pose proof (eq_refl (length l1)). generalize dependent H. generalize dependent Heql1.
 generalize (length l1) at 2. intros. generalize dependent l1.
 induction n0; intros...
@@ -4988,17 +4988,17 @@ induction n0; intros...
     rewrite H2. rewrite <- surjective_pairing...
 Qed.
 
-Lemma refunc_is_matrix_transpose' : forall p tn P1 P2 P3 P4 P5 pr
+Lemma dtorize_is_matrix_transpose' : forall p tn P1 P2 P3 P4 P5 pr
   (GL : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
   (Nonempty : program_cfun_bods_for_type tn p <> []),
-  pr = refunctionalize_program p tn P1 P2 P3 P4 P5 ->
+  pr = destructorize_program p tn P1 P2 P3 P4 P5 ->
   program_gfun_bods_for_type tn pr =
     read_gfuns_from_matrix (transpose_matrix (read_cfuns_into_matrix
-      (map (fun x => (fst x, map (fun y => (fst y, refunc_term_helper (program_skeleton p) tn (fst x) (fst y) (snd y))) (snd x)))
+      (map (fun x => (fst x, map (fun y => (fst y, dtorize_term_helper (program_skeleton p) tn (fst x) (fst y) (snd y))) (snd x)))
         (program_cfun_bods_for_type tn p)))).
 Proof with eauto.
 intros. subst. unfold program_gfun_bods_for_type. simpl. clear - GL Nonempty.
-unfold RefuncIII.new_gfun_bods_g. unfold RefuncIII.new_gfun_bods_l.
+unfold DtorizeIII.new_gfun_bods_g. unfold DtorizeIII.new_gfun_bods_l.
 rewrite map_app. rewrite map_app. repeat rewrite filter_app.
 match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = []) end.
 - pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
@@ -5401,7 +5401,7 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
     }
     rewrite map_app. f_equal.
     * repeat rewrite map_map. apply map_ext_in. intros.
-      unfold RefuncIII.globalize_aux. unfold RefuncIII.localize_aux.
+      unfold DtorizeIII.globalize_aux. unfold DtorizeIII.localize_aux.
       match goal with [|- ?lhs' = _] => set (lhs:=lhs') end.
       rewrite combine_fst_snd with (ps:=lhs).
       clear p0 l H. rename H0 into H.
@@ -5458,9 +5458,9 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction c.
-            ** simpl. unfold RefuncIII.switch_indices_aux. unfold switch_indices_cfun.
+            ** simpl. unfold DtorizeIII.switch_indices_aux. unfold switch_indices_cfun.
                destruct (lookup_cfun_sig_scoped (program_skeleton p) (global (fst a)))...
-            ** simpl. unfold refunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold dtorize_term_helper. destruct a0. simpl. destruct s.
                --- rewrite IHc...
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
@@ -5476,16 +5476,16 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction c.
-            ** simpl. unfold RefuncIII.switch_indices_aux. unfold switch_indices_cfun.
+            ** simpl. unfold DtorizeIII.switch_indices_aux. unfold switch_indices_cfun.
                destruct (lookup_cfun_sig_scoped (program_skeleton p) (local (fst a)))...
-            ** simpl. unfold refunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold dtorize_term_helper. destruct a0. simpl. destruct s.
                --- rewrite IHc...
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
                    change (global q0) with (fst (global q0, l)).
                    rewrite in_ctors_lookup_ctor_sig...
     * repeat rewrite map_map. apply map_ext_in. intros.
-      unfold RefuncIII.globalize_aux. unfold RefuncIII.localize_aux.
+      unfold DtorizeIII.globalize_aux. unfold DtorizeIII.localize_aux.
       match goal with [|- ?lhs' = _] => set (lhs:=lhs') end.
       rewrite combine_fst_snd with (ps:=lhs).
       clear p0 l H. rename H0 into H.
@@ -5542,9 +5542,9 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction c.
-            ** simpl. unfold RefuncIII.switch_indices_aux. unfold switch_indices_cfun.
+            ** simpl. unfold DtorizeIII.switch_indices_aux. unfold switch_indices_cfun.
                destruct (lookup_cfun_sig_scoped (program_skeleton p) (global (fst a)))...
-            ** simpl. unfold refunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold dtorize_term_helper. destruct a0. simpl. destruct s.
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
                    change (local q0) with (fst (local q0, l)).
@@ -5561,9 +5561,9 @@ match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _] => assert (l1 = [] /\ l2 = [])
 
             rewrite <- filter_map. simpl. rewrite map_map. simpl.
             apply map_ext. intros. generalize (snd a). induction c.
-            ** simpl. unfold RefuncIII.switch_indices_aux. unfold switch_indices_cfun.
+            ** simpl. unfold DtorizeIII.switch_indices_aux. unfold switch_indices_cfun.
                destruct (lookup_cfun_sig_scoped (program_skeleton p) (local (fst a)))...
-            ** simpl. unfold refunc_term_helper. destruct a0. simpl. destruct s.
+            ** simpl. unfold dtorize_term_helper. destruct a0. simpl. destruct s.
                --- case_eq (eq_QName q q0); intros...
                    simpl. rewrite eq_QName_eq in H0. subst.
                    change (local q0) with (fst (local q0, l)).
@@ -5609,15 +5609,15 @@ destruct H; destruct H1;
     ].
 Qed.
 
-Lemma refunc_is_matrix_transpose : forall p tn P1 P2 P3 P4 P5 pr
+Lemma dtorize_is_matrix_transpose : forall p tn P1 P2 P3 P4 P5 pr
   (GL : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
   (Nonempty : program_cfun_bods_for_type tn p <> []),
-  pr = refunctionalize_program p tn P1 P2 P3 P4 P5 ->
+  pr = destructorize_program p tn P1 P2 P3 P4 P5 ->
   program_gfun_bods_for_type tn pr =
-    map (fun x => (fst x, map (fun y => (fst y, refunc_term_helper (program_skeleton p) tn (fst y) (fst x) (snd y))) (snd x)))
+    map (fun x => (fst x, map (fun y => (fst y, dtorize_term_helper (program_skeleton p) tn (fst y) (fst x) (snd y))) (snd x)))
       (read_gfuns_from_matrix (transpose_matrix (read_cfuns_into_matrix (program_cfun_bods_for_type tn p)))).
 Proof with eauto.
-intros. erewrite refunc_is_matrix_transpose'... clear.
+intros. erewrite dtorize_is_matrix_transpose'... clear.
 remember (program_cfun_bods_for_type tn p) as l. intros. cbn.
 rewrite map_map. cbn. destruct l...
 repeat rewrite map_map. cbn [snd]. cbn [map]. cbn [snd].
@@ -5640,7 +5640,7 @@ assert (exists l', l'++l1 = p0::l /\ l'++l1 = program_cfun_bods_for_type tn p).
 { exists []... }
 clear Heql1 Heql. rename H into Heql1.
 clear - Heql0 Heql1.
-generalize (refunc_term_helper (program_skeleton p) tn) as f. intros.
+generalize (dtorize_term_helper (program_skeleton p) tn) as f. intros.
 pose proof (eq_refl (length l1)). generalize dependent H. generalize dependent Heql1.
 generalize (length l1) at 2. intros. generalize dependent l1.
 induction n0; intros...
@@ -5726,20 +5726,20 @@ induction l; intros.
   exists x. exists x0. split...
 Qed.
 
-Corollary derefunc_preserves_gfuns_nonempty :
+Corollary ctorize_dtorize_preserves_gfuns_nonempty :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
   (Nonempty : program_gfun_bods_for_type tn p <> [])
-  (NonemptyCfuns : program_cfun_bods_for_type tn (defunctionalize_program p tn P1 P2 P3 P4 P5) <> [])
+  (NonemptyCfuns : program_cfun_bods_for_type tn (constructorize_program p tn P1 P2 P3 P4 P5) <> [])
   (NonemptyDtors : forall x, In x (map snd (program_gfun_bods_for_type tn p)) -> x <> [])
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
-  (DefuncCdt2 : In tn (skeleton_cdts (program_skeleton p))),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5   ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt2 : In tn (skeleton_cdts (program_skeleton p))),
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5   ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_gfun_bods_for_type tn p = program_gfun_bods_for_type tn pr2.
 Proof with eauto.
-intros. subst. symmetry. erewrite refunc_is_matrix_transpose... erewrite defunc_is_matrix_transpose...
+intros. subst. symmetry. erewrite dtorize_is_matrix_transpose... erewrite ctorize_is_matrix_transpose...
 match goal with [|- map _ (_ (_ (_ (_ ?l)))) = _] => case_eq (snd l); intros end.
 { case_eq (program_gfun_bods_for_type tn p); intros...
   rewrite H0 in H.
@@ -5863,7 +5863,7 @@ rewrite read_gfuns_into_from_matrix.
   rewrite map_map. simpl. erewrite map_ext_in.
   2:{ intros. rewrite map_map. simpl. erewrite map_ext_in.
     2:{ intros. rewrite surjective_pairing with (p:=a0) in H0. rewrite surjective_pairing with (p:=a) in H.
-      erewrite derefunc_helper_inverse... rewrite <- surjective_pairing. instantiate (1:=id). unfold id... }
+      erewrite ctorize_dtorize_helper_inverse... rewrite <- surjective_pairing. instantiate (1:=id). unfold id... }
     reflexivity.
   }
   apply map_ext. intros. rewrite map_id...
@@ -5874,12 +5874,12 @@ rewrite read_gfuns_into_from_matrix.
     rewrite map_map. simpl. apply in_map. apply in_map...
 Qed.
 
-Lemma derefunc_preserves_gfuns_empty_dtors :
+Lemma ctorize_dtorize_preserves_gfuns_empty_dtors :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
-  (DefuncCdt2 : In tn (skeleton_cdts (program_skeleton p)))
-  (H : pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5 )
-  (H0 : pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5')
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt2 : In tn (skeleton_cdts (program_skeleton p)))
+  (H : pr  = constructorize_program p  tn P1  P2  P3  P4  P5 )
+  (H0 : pr2 = destructorize_program pr tn P1' P2' P3' P4' P5')
   (p0 : ScopedName * gfun_bod)
   (l : list (ScopedName * gfun_bod))
   (H1 : program_gfun_bods_for_type tn p = p0 :: l)
@@ -5900,14 +5900,14 @@ assert (Forall (fun x => snd x = []) l).
 
 assert (Forall (fun x => snd x = []) (p0::l)). { constructor... }
 clear H3 H2. rewrite <- H1 in *. clear H1. subst.
-clear - H4 DefuncCdt DefuncCdt2.
+clear - H4 CtorizeCdt CtorizeCdt2.
 unfold program_gfun_bods_for_type in H4. rewrite filter_app in H4.
 rewrite <- Forall_app_iff in H4. destruct H4.
 
 cbn. rewrite filter_app. unfold program_gfun_bods_for_type. rewrite filter_app.
 f_equal.
 - rewrite map_app. rewrite filter_app.
-  unfold computeNewDatatype. unfold DefuncIII.new_gfun_bods_g.
+  unfold computeNewDatatype. unfold CtorizeIII.new_gfun_bods_g.
   match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * gfun_bod)) end.
   2:{ rewrite map_map. cbn. match goal with [|- _ = _ _ (_ ?f (_ _ ?l))] =>
     generalize l end. clear. induction l; intros...
@@ -5919,9 +5919,9 @@ f_equal.
   replace (filter (gfunsigs_filterfun_g tn) (skeleton_ctors (program_skeleton p)))
     with (@nil (ScopedName * list TypeName)).
   2:{ match goal with [|- _ = ?l] => case_eq l; intros end...
-    clear - DefuncCdt H1. exfalso. pose proof (in_eq p0 l).
+    clear - CtorizeCdt H1. exfalso. pose proof (in_eq p0 l).
     rewrite <- H1 in H. clear H1. rewrite filter_In in H.
-    destruct H. unfold not in DefuncCdt. eapply DefuncCdt... clear - H0.
+    destruct H. unfold not in CtorizeCdt. eapply CtorizeCdt... clear - H0.
     unfold gfunsigs_filterfun_g in H0. destruct p0. destruct s; try discriminate.
     rewrite eq_TypeName_eq in H0; subst...
   }
@@ -5943,7 +5943,7 @@ f_equal.
     repeat rewrite map_map. cbn. f_equal. repeat rewrite filter_compose.
     apply filter_ext. intros. rewrite eq_TypeName_symm with (tn1:=tn).
     repeat rewrite andb_diag...
-  + clear - H H0 DefuncCdt2. unfold DefuncIII.new_cfun_bods_g. unfold DefuncIII.new_cfun_bods_l.
+  + clear - H H0 CtorizeCdt2. unfold CtorizeIII.new_cfun_bods_g. unfold CtorizeIII.new_cfun_bods_l.
     erewrite map_ext_in with (l:=filter (gfunsigs_filterfun_g tn) _).
     2:{ intros. erewrite map_ext_in with (l:=filter (cfunsigs_filterfun_g tn) _).
       2:{ intros.
@@ -6047,12 +6047,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l) ++ _) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - DefuncCdt2 H1. remember (program_cfun_bods_g p) as c.
+        intros. clear - CtorizeCdt2 H1. remember (program_cfun_bods_g p) as c.
         assert (Forall (fun x => In x (program_cfun_bods_g p)) c).
         { subst. rewrite Forall_forall... }
-        clear - H DefuncCdt2 H1. induction c...
+        clear - H CtorizeCdt2 H1. induction c...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHc...
-        rewrite app_nil_r. clear - H3 H1 DefuncCdt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 CtorizeCdt2. destruct a0. cbn.
         assert (exists l, In (q, l++c) (program_cfun_bods_g p)). { exists []... }
         clear H3.
         induction c... cbn. destruct q. rewrite <- IHc.
@@ -6065,10 +6065,10 @@ f_equal.
         pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)).
         unfold cfun_sigs_in_dts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DefuncCdt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 CtorizeCdt2.
         rewrite filter_In in H1. destruct H1. unfold gfunsigs_filterfun_g in H1.
         destruct a. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 DefuncCdt2.
+        cbn in H2. clear - H2 CtorizeCdt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -6076,12 +6076,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l)) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - DefuncCdt2 H1. remember (program_cfun_bods_l p) as c.
+        intros. clear - CtorizeCdt2 H1. remember (program_cfun_bods_l p) as c.
         assert (Forall (fun x => In x (program_cfun_bods_l p)) c).
         { subst. rewrite Forall_forall... }
-        clear - H DefuncCdt2 H1. induction c...
+        clear - H CtorizeCdt2 H1. induction c...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHc...
-        rewrite app_nil_r. clear - H3 H1 DefuncCdt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 CtorizeCdt2. destruct a0. cbn.
         assert (exists l, In (q, l++c) (program_cfun_bods_l p)). { exists []... }
         clear H3.
         induction c... cbn. destruct q. rewrite <- IHc.
@@ -6094,10 +6094,10 @@ f_equal.
         pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)).
         unfold cfun_sigs_in_dts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DefuncCdt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 CtorizeCdt2.
         rewrite filter_In in H1. destruct H1. unfold gfunsigs_filterfun_g in H1.
         destruct a. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 DefuncCdt2.
+        cbn in H2. clear - H2 CtorizeCdt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -6129,7 +6129,7 @@ f_equal.
       cbn in *. f_equal...
     * unfold QName in *. rewrite H0. cbn in H. rewrite H0 in H...
 - rewrite map_app. rewrite filter_app.
-  unfold computeNewDatatype. unfold DefuncIII.new_gfun_bods_l.
+  unfold computeNewDatatype. unfold CtorizeIII.new_gfun_bods_l.
   match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * gfun_bod)) end.
   2:{ rewrite map_map. cbn. match goal with [|- _ = _ _ (_ ?f (_ _ ?l))] =>
     generalize l end. clear. induction l; intros...
@@ -6141,9 +6141,9 @@ f_equal.
   replace (filter (gfunsigs_filterfun_l tn) (skeleton_ctors (program_skeleton p)))
     with (@nil (ScopedName * list TypeName)).
   2:{ match goal with [|- _ = ?l] => case_eq l; intros end...
-    clear - DefuncCdt H1. exfalso. pose proof (in_eq p0 l).
+    clear - CtorizeCdt H1. exfalso. pose proof (in_eq p0 l).
     rewrite <- H1 in H. clear H1. rewrite filter_In in H.
-    destruct H. unfold not in DefuncCdt. eapply DefuncCdt... clear - H0.
+    destruct H. unfold not in CtorizeCdt. eapply CtorizeCdt... clear - H0.
     unfold gfunsigs_filterfun_l in H0. destruct p0. destruct s; try discriminate.
     rewrite eq_TypeName_eq in H0; subst...
   }
@@ -6165,7 +6165,7 @@ f_equal.
     repeat rewrite map_map. cbn. f_equal. repeat rewrite filter_compose.
     apply filter_ext. intros. rewrite eq_TypeName_symm with (tn1:=tn).
     repeat rewrite andb_diag...
-  + clear - H H0 DefuncCdt2. unfold DefuncIII.new_cfun_bods_g. unfold DefuncIII.new_cfun_bods_l.
+  + clear - H H0 CtorizeCdt2. unfold CtorizeIII.new_cfun_bods_g. unfold CtorizeIII.new_cfun_bods_l.
     erewrite map_ext_in with (l:=filter (gfunsigs_filterfun_l tn) _).
     2:{ intros. erewrite map_ext_in with (l:=filter (cfunsigs_filterfun_g tn) _).
       2:{ intros.
@@ -6269,12 +6269,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l) ++ _) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - DefuncCdt2 H1. remember (program_cfun_bods_g p) as c.
+        intros. clear - CtorizeCdt2 H1. remember (program_cfun_bods_g p) as c.
         assert (Forall (fun x => In x (program_cfun_bods_g p)) c).
         { subst. rewrite Forall_forall... }
-        clear - H DefuncCdt2 H1. induction c...
+        clear - H CtorizeCdt2 H1. induction c...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHc...
-        rewrite app_nil_r. clear - H3 H1 DefuncCdt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 CtorizeCdt2. destruct a0. cbn.
         assert (exists l, In (q, l++c) (program_cfun_bods_g p)). { exists []... }
         clear H3.
         induction c... cbn. destruct q. rewrite <- IHc.
@@ -6287,10 +6287,10 @@ f_equal.
         pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)).
         unfold cfun_sigs_in_dts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DefuncCdt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 CtorizeCdt2.
         rewrite filter_In in H1. destruct H1. unfold gfunsigs_filterfun_l in H1.
         destruct a. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 DefuncCdt2.
+        cbn in H2. clear - H2 CtorizeCdt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -6298,12 +6298,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l)) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - DefuncCdt2 H1. remember (program_cfun_bods_l p) as c.
+        intros. clear - CtorizeCdt2 H1. remember (program_cfun_bods_l p) as c.
         assert (Forall (fun x => In x (program_cfun_bods_l p)) c).
         { subst. rewrite Forall_forall... }
-        clear - H DefuncCdt2 H1. induction c...
+        clear - H CtorizeCdt2 H1. induction c...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHc...
-        rewrite app_nil_r. clear - H3 H1 DefuncCdt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 CtorizeCdt2. destruct a0. cbn.
         assert (exists l, In (q, l++c) (program_cfun_bods_l p)). { exists []... }
         clear H3.
         induction c... cbn. destruct q. rewrite <- IHc.
@@ -6316,10 +6316,10 @@ f_equal.
         pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)).
         unfold cfun_sigs_in_dts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DefuncCdt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 CtorizeCdt2.
         rewrite filter_In in H1. destruct H1. unfold gfunsigs_filterfun_l in H1.
         destruct a. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 DefuncCdt2.
+        cbn in H2. clear - H2 CtorizeCdt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -6352,15 +6352,15 @@ f_equal.
     * unfold QName in *. rewrite H. cbn in H0. rewrite H in H0...
 Qed.
 
-Corollary derefunc_preserves_gfuns_aux :
+Corollary ctorize_dtorize_preserves_gfuns_aux :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (* Necessary in case of empty codatatype to make sure no datatypes are defunc.ed. *)
-  (DefuncCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
-  (DefuncCdt2 : In tn (skeleton_cdts (program_skeleton p))),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (* Necessary in case of empty codatatype to make sure no datatypes are ctorize.ed. *)
+  (CtorizeCdt : forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn)
+  (CtorizeCdt2 : In tn (skeleton_cdts (program_skeleton p))),
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_gfun_bods_for_type tn p = program_gfun_bods_for_type tn pr2.
 Proof with eauto.
 intros.
@@ -6371,13 +6371,13 @@ case_eq (program_gfun_bods_for_type tn p); intros.
     * rewrite filter_app. rewrite map_app. rewrite map_app. rewrite filter_app.
       match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * gfun_bod)) end.
       2:{ rewrite map_map. match goal with [|- _ = _ _ (_ _ ?l)] => replace l with (@nil (ScopedName * list TypeName)) end...
-        clear - DefuncCdt. generalize dependent (skeleton_ctors (program_skeleton p)). induction c; intros...
+        clear - CtorizeCdt. generalize dependent (skeleton_ctors (program_skeleton p)). induction c; intros...
         cbn. unfold gfunsigs_filterfun_g in *. destruct a. destruct s.
-        - apply IHc. intros. apply DefuncCdt. right...
+        - apply IHc. intros. apply CtorizeCdt. right...
         - case_eq (eq_TypeName tn (fst q)); intros.
-          + exfalso. unfold not in DefuncCdt. apply DefuncCdt with (c0:=(global q, l)); [left|]... cbn.
+          + exfalso. unfold not in CtorizeCdt. apply CtorizeCdt with (c0:=(global q, l)); [left|]... cbn.
             rewrite eq_TypeName_eq in H...
-          + apply IHc. intros. apply DefuncCdt. right...
+          + apply IHc. intros. apply CtorizeCdt. right...
       }
       rewrite app_nil_r.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => replace l with (@nil (ScopedName * list TypeName)) end...
@@ -6403,7 +6403,7 @@ case_eq (program_gfun_bods_for_type tn p); intros.
         intros. destruct a. cbn. destruct q. cbn. instantiate (1:=fun x => eq_TypeName (fst x) tn)...
       }
       intros...
-    * rewrite map_map. cbn. clear. unfold DefuncIII.new_gfun_bods_g.
+    * rewrite map_map. cbn. clear. unfold CtorizeIII.new_gfun_bods_g.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end. induction l...
       cbn. destruct a. case_eq (negb (eq_TypeName tn (fst q))); intros...
       cbn. rewrite negb_true_iff in H. rewrite eq_TypeName_symm in H. rewrite H...
@@ -6411,13 +6411,13 @@ case_eq (program_gfun_bods_for_type tn p); intros.
     * rewrite filter_app. rewrite map_app. rewrite map_app. rewrite filter_app.
       match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * gfun_bod)) end.
       2:{ rewrite map_map. match goal with [|- _ = _ _ (_ _ ?l)] => replace l with (@nil (ScopedName * list TypeName)) end...
-        clear - DefuncCdt. generalize dependent (skeleton_ctors (program_skeleton p)). induction c; intros...
+        clear - CtorizeCdt. generalize dependent (skeleton_ctors (program_skeleton p)). induction c; intros...
         cbn. unfold gfunsigs_filterfun_l in *. destruct a. destruct s.
         - case_eq (eq_TypeName tn (fst q)); intros.
-          + exfalso. unfold not in DefuncCdt. apply DefuncCdt with (c0:=(local q, l)); [left|]... cbn.
+          + exfalso. unfold not in CtorizeCdt. apply CtorizeCdt with (c0:=(local q, l)); [left|]... cbn.
             rewrite eq_TypeName_eq in H...
-          + apply IHc. intros. apply DefuncCdt. right...
-        - apply IHc. intros. apply DefuncCdt. right...
+          + apply IHc. intros. apply CtorizeCdt. right...
+        - apply IHc. intros. apply CtorizeCdt. right...
       }
       rewrite app_nil_r.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => replace l with (@nil (ScopedName * list TypeName)) end...
@@ -6443,17 +6443,17 @@ case_eq (program_gfun_bods_for_type tn p); intros.
         intros. destruct a. cbn. destruct q. cbn. instantiate (1:=fun x => eq_TypeName (fst x) tn)...
       }
       intros...
-    * rewrite map_map. cbn. clear. unfold DefuncIII.new_gfun_bods_l.
+    * rewrite map_map. cbn. clear. unfold CtorizeIII.new_gfun_bods_l.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end. induction l...
       cbn. destruct a. case_eq (negb (eq_TypeName tn (fst q))); intros...
       cbn. rewrite negb_true_iff in H. rewrite eq_TypeName_symm in H. rewrite H...
 - case_eq (snd p0); intros.
-  { eapply derefunc_preserves_gfuns_empty_dtors... }
+  { eapply ctorize_dtorize_preserves_gfuns_empty_dtors... }
 
   assert (program_gfun_bods_for_type tn p <> []).
   { unfold not. intros. rewrite H3 in H1. discriminate. }
   rewrite <- H1.
-  eapply derefunc_preserves_gfuns_nonempty...
+  eapply ctorize_dtorize_preserves_gfuns_nonempty...
   { clear - H1 H2. cbn. unfold program_gfun_bods_for_type in H1.
     rewrite filter_app in H1. pose proof (in_eq p0 l) as InAux.
     rewrite <- H1 in InAux. rename H2 into p0Eq. clear - p0Eq InAux.
@@ -6482,7 +6482,7 @@ case_eq (program_gfun_bods_for_type tn p); intros.
         (skeleton_dtors (program_skeleton p))));
       [ unfold cfunsigs_filterfun_l; rewrite filter_In in *;
         destruct H0; split; eauto; rewrite eq_TypeName_symm; eauto | ];
-      apply in_split in H; do 2 destruct H; unfold DefuncIII.new_cfun_bods_l;
+      apply in_split in H; do 2 destruct H; unfold CtorizeIII.new_cfun_bods_l;
       rewrite H; apply not_eq_sym; repeat rewrite map_app; cbn;
       repeat rewrite filter_app; cbn;
       assert (eq_TypeName (fst q) (fst qn') = true);
@@ -6498,7 +6498,7 @@ case_eq (program_gfun_bods_for_type tn p); intros.
         (skeleton_dtors (program_skeleton p))));
       [ unfold cfunsigs_filterfun_g; rewrite filter_In in *;
         destruct H0; split; eauto; rewrite eq_TypeName_symm; eauto | ];
-      apply in_split in H; do 2 destruct H; unfold DefuncIII.new_cfun_bods_g;
+      apply in_split in H; do 2 destruct H; unfold CtorizeIII.new_cfun_bods_g;
       rewrite H; apply not_eq_sym; repeat rewrite map_app; cbn;
       repeat rewrite filter_app; cbn;
       repeat rewrite filter_app; cbn;
@@ -6521,7 +6521,7 @@ case_eq (program_gfun_bods_for_type tn p); intros.
   }
 Qed.
 
-Lemma defunc_cdt_aux : forall p tn,
+Lemma ctorize_cdt_aux : forall p tn,
   In tn (skeleton_cdts (program_skeleton p)) ->
   (forall c, In c (skeleton_ctors (program_skeleton p)) -> fst (unscope (fst c)) <> tn).
 Proof with eauto.
@@ -6534,20 +6534,20 @@ eapply H1...
 Qed.
 
 
-Corollary redefunc_preserves_cfuns_nonempty :
+Corollary rectorize_preserves_cfuns_nonempty :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
   (Nonempty : program_cfun_bods_for_type tn p <> [])
-  (NonemptyGfuns : program_gfun_bods_for_type tn (refunctionalize_program p tn P1 P2 P3 P4 P5) <> [])
+  (NonemptyGfuns : program_gfun_bods_for_type tn (destructorize_program p tn P1 P2 P3 P4 P5) <> [])
   (NonemptyCtors : forall x, In x (map snd (program_cfun_bods_for_type tn p)) -> x <> [])
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
-  (RefuncDt2 : In tn (skeleton_dts (program_skeleton p))),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt2 : In tn (skeleton_dts (program_skeleton p))),
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_cfun_bods_for_type tn p = program_cfun_bods_for_type tn pr2.
 Proof with eauto.
-intros. subst. symmetry. erewrite defunc_is_matrix_transpose'... erewrite refunc_is_matrix_transpose'...
+intros. subst. symmetry. erewrite ctorize_is_matrix_transpose'... erewrite dtorize_is_matrix_transpose'...
 match goal with [|- map _ (_ (_ (_ (_ ?l)))) = _] => case_eq (snd l); intros end.
 { case_eq (program_cfun_bods_for_type tn p); intros...
   rewrite H0 in H.
@@ -6671,7 +6671,7 @@ rewrite read_cfuns_into_from_matrix.
   rewrite map_map. simpl. erewrite map_ext_in.
   2:{ intros. rewrite map_map. simpl. erewrite map_ext_in.
     2:{ intros. rewrite surjective_pairing with (p:=a0) in H0. rewrite surjective_pairing with (p:=a) in H.
-      erewrite redefunc_helper_inverse... rewrite <- surjective_pairing. instantiate (1:=id). unfold id... }
+      erewrite rectorize_helper_inverse... rewrite <- surjective_pairing. instantiate (1:=id). unfold id... }
     reflexivity.
   }
   apply map_ext. intros. rewrite map_id...
@@ -6682,12 +6682,12 @@ rewrite read_cfuns_into_from_matrix.
     rewrite map_map. simpl. apply in_map. apply in_map...
 Qed.
 
-Lemma redefunc_preserves_cfuns_empty_ctors :
+Lemma rectorize_preserves_cfuns_empty_ctors :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
-  (RefuncDt2 : In tn (skeleton_dts (program_skeleton p)))
-  (H : pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5)
-  (H0 : pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5')
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt2 : In tn (skeleton_dts (program_skeleton p)))
+  (H : pr  = destructorize_program p  tn P1  P2  P3  P4  P5)
+  (H0 : pr2 = constructorize_program pr tn P1' P2' P3' P4' P5')
   (p0 : ScopedName * cfun_bod)
   (l : list (ScopedName * cfun_bod))
   (H1 : program_cfun_bods_for_type tn p = p0 :: l)
@@ -6708,14 +6708,14 @@ assert (Forall (fun x => snd x = []) l).
 
 assert (Forall (fun x => snd x = []) (p0::l)). { constructor... }
 clear H3 H2. rewrite <- H1 in *. clear H1. subst.
-clear - H4 RefuncDt RefuncDt2.
+clear - H4 DtorizeDt DtorizeDt2.
 unfold program_cfun_bods_for_type in H4. rewrite filter_app in H4.
 rewrite <- Forall_app_iff in H4. destruct H4.
 
 cbn. rewrite filter_app. unfold program_cfun_bods_for_type. rewrite filter_app.
 f_equal.
 - rewrite map_app. rewrite filter_app.
-  unfold computeNewCoDatatype. unfold RefuncIII.new_cfun_bods_g.
+  unfold computeNewCoDatatype. unfold DtorizeIII.new_cfun_bods_g.
   match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * cfun_bod)) end.
   2:{ rewrite map_map. cbn. match goal with [|- _ = _ _ (_ ?f (_ _ ?l))] =>
     generalize l end. clear. induction l; intros...
@@ -6727,9 +6727,9 @@ f_equal.
   replace (filter (cfunsigs_filterfun_g tn) (skeleton_dtors (program_skeleton p)))
     with (@nil (ScopedName * list TypeName * TypeName)).
   2:{ match goal with [|- _ = ?l] => case_eq l; intros end...
-    clear - RefuncDt H1. exfalso. pose proof (in_eq p0 l).
+    clear - DtorizeDt H1. exfalso. pose proof (in_eq p0 l).
     rewrite <- H1 in H. clear H1. rewrite filter_In in H.
-    destruct H. unfold not in RefuncDt. eapply RefuncDt... clear - H0.
+    destruct H. unfold not in DtorizeDt. eapply DtorizeDt... clear - H0.
     unfold cfunsigs_filterfun_g in H0. destruct p0. destruct p. destruct s; try discriminate.
     rewrite eq_TypeName_eq in H0; subst...
   }
@@ -6751,7 +6751,7 @@ f_equal.
     repeat rewrite map_map. cbn. f_equal. repeat rewrite filter_compose.
     apply filter_ext. intros. rewrite eq_TypeName_symm with (tn1:=tn).
     repeat rewrite andb_diag...
-  + clear - H H0 RefuncDt2. unfold RefuncIII.new_gfun_bods_g. unfold RefuncIII.new_gfun_bods_l.
+  + clear - H H0 DtorizeDt2. unfold DtorizeIII.new_gfun_bods_g. unfold DtorizeIII.new_gfun_bods_l.
     erewrite map_ext_in with (l:=filter (cfunsigs_filterfun_g tn) _).
     2:{ intros. erewrite map_ext_in with (l:=filter (gfunsigs_filterfun_g tn) _).
       2:{ intros.
@@ -6855,12 +6855,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l) ++ _) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - RefuncDt2 H1. remember (program_gfun_bods_g p) as g.
+        intros. clear - DtorizeDt2 H1. remember (program_gfun_bods_g p) as g.
         assert (Forall (fun x => In x (program_gfun_bods_g p)) g).
         { subst. rewrite Forall_forall... }
-        clear - H RefuncDt2 H1. induction g...
+        clear - H DtorizeDt2 H1. induction g...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHg...
-        rewrite app_nil_r. clear - H3 H1 RefuncDt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 DtorizeDt2. destruct a0. cbn.
         assert (exists l, In (q, l++g) (program_gfun_bods_g p)). { exists []... }
         clear H3.
         induction g... cbn. destruct q. rewrite <- IHg.
@@ -6873,10 +6873,10 @@ f_equal.
         pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)).
         unfold gfun_sigs_in_cdts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 RefuncDt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DtorizeDt2.
         rewrite filter_In in H1. destruct H1. unfold cfunsigs_filterfun_g in H1.
         destruct a. destruct p0. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 RefuncDt2.
+        cbn in H2. clear - H2 DtorizeDt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -6884,12 +6884,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l)) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - RefuncDt2 H1. remember (program_gfun_bods_l p) as g.
+        intros. clear - DtorizeDt2 H1. remember (program_gfun_bods_l p) as g.
         assert (Forall (fun x => In x (program_gfun_bods_l p)) g).
         { subst. rewrite Forall_forall... }
-        clear - H RefuncDt2 H1. induction g...
+        clear - H DtorizeDt2 H1. induction g...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHg...
-        rewrite app_nil_r. clear - H3 H1 RefuncDt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 DtorizeDt2. destruct a0. cbn.
         assert (exists l, In (q, l++g) (program_gfun_bods_l p)). { exists []... }
         clear H3.
         induction g... cbn. destruct q. rewrite <- IHg.
@@ -6902,10 +6902,10 @@ f_equal.
         pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)).
         unfold gfun_sigs_in_cdts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 RefuncDt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DtorizeDt2.
         rewrite filter_In in H1. destruct H1. unfold cfunsigs_filterfun_g in H1.
         destruct a. destruct p0. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 RefuncDt2.
+        cbn in H2. clear - H2 DtorizeDt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -6937,7 +6937,7 @@ f_equal.
       cbn in *. f_equal...
     * unfold QName in *. rewrite H0. cbn in H. rewrite H0 in H...
 - rewrite map_app. rewrite filter_app.
-  unfold computeNewCoDatatype. unfold RefuncIII.new_cfun_bods_l.
+  unfold computeNewCoDatatype. unfold DtorizeIII.new_cfun_bods_l.
   match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * cfun_bod)) end.
   2:{ rewrite map_map. cbn. match goal with [|- _ = _ _ (_ ?f (_ _ ?l))] =>
     generalize l end. clear. induction l; intros...
@@ -6949,9 +6949,9 @@ f_equal.
   replace (filter (cfunsigs_filterfun_l tn) (skeleton_dtors (program_skeleton p)))
     with (@nil (ScopedName * list TypeName * TypeName)).
   2:{ match goal with [|- _ = ?l] => case_eq l; intros end...
-    clear - RefuncDt H1. exfalso. pose proof (in_eq p0 l).
+    clear - DtorizeDt H1. exfalso. pose proof (in_eq p0 l).
     rewrite <- H1 in H. clear H1. rewrite filter_In in H.
-    destruct H. unfold not in RefuncDt. eapply RefuncDt... clear - H0.
+    destruct H. unfold not in DtorizeDt. eapply DtorizeDt... clear - H0.
     unfold cfunsigs_filterfun_l in H0. destruct p0. destruct p. destruct s; try discriminate.
     rewrite eq_TypeName_eq in H0; subst...
   }
@@ -6973,7 +6973,7 @@ f_equal.
     repeat rewrite map_map. cbn. f_equal. repeat rewrite filter_compose.
     apply filter_ext. intros. rewrite eq_TypeName_symm with (tn1:=tn).
     repeat rewrite andb_diag...
-  + clear - H H0 RefuncDt2. unfold RefuncIII.new_gfun_bods_g. unfold RefuncIII.new_gfun_bods_l.
+  + clear - H H0 DtorizeDt2. unfold DtorizeIII.new_gfun_bods_g. unfold DtorizeIII.new_gfun_bods_l.
     erewrite map_ext_in with (l:=filter (cfunsigs_filterfun_l tn) _).
     2:{ intros. erewrite map_ext_in with (l:=filter (gfunsigs_filterfun_g tn) _).
       2:{ intros.
@@ -7077,12 +7077,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l) ++ _) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - RefuncDt2 H1. remember (program_gfun_bods_g p) as g.
+        intros. clear - DtorizeDt2 H1. remember (program_gfun_bods_g p) as g.
         assert (Forall (fun x => In x (program_gfun_bods_g p)) g).
         { subst. rewrite Forall_forall... }
-        clear - H RefuncDt2 H1. induction g...
+        clear - H DtorizeDt2 H1. induction g...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHg...
-        rewrite app_nil_r. clear - H3 H1 RefuncDt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 DtorizeDt2. destruct a0. cbn.
         assert (exists l, In (q, l++g) (program_gfun_bods_g p)). { exists []... }
         clear H3.
         induction g... cbn. destruct q. rewrite <- IHg.
@@ -7095,10 +7095,10 @@ f_equal.
         pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)).
         unfold gfun_sigs_in_cdts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 RefuncDt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DtorizeDt2.
         rewrite filter_In in H1. destruct H1. unfold cfunsigs_filterfun_l in H1.
         destruct a. destruct p0. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 RefuncDt2.
+        cbn in H2. clear - H2 DtorizeDt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -7106,12 +7106,12 @@ f_equal.
       match goal with [|- (_, _ _ (_ ?l)) = _] =>
         replace l with (@nil (QName * (ScopedName * expr))) end.
       2:{
-        intros. clear - RefuncDt2 H1. remember (program_gfun_bods_l p) as g.
+        intros. clear - DtorizeDt2 H1. remember (program_gfun_bods_l p) as g.
         assert (Forall (fun x => In x (program_gfun_bods_l p)) g).
         { subst. rewrite Forall_forall... }
-        clear - H RefuncDt2 H1. induction g...
+        clear - H DtorizeDt2 H1. induction g...
         inversion H; subst. cbn. rewrite filter_app. rewrite <- IHg...
-        rewrite app_nil_r. clear - H3 H1 RefuncDt2. destruct a0. cbn.
+        rewrite app_nil_r. clear - H3 H1 DtorizeDt2. destruct a0. cbn.
         assert (exists l, In (q, l++g) (program_gfun_bods_l p)). { exists []... }
         clear H3.
         induction g... cbn. destruct q. rewrite <- IHg.
@@ -7124,10 +7124,10 @@ f_equal.
         pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)).
         unfold gfun_sigs_in_cdts in H0. rewrite Forall_forall in H0.
         rewrite in_map_iff in H. do 2 destruct H. apply H0 in H2.
-        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 RefuncDt2.
+        unfold QName in *. rewrite H in H2. cbn in H2. clear - H H1 H2 DtorizeDt2.
         rewrite filter_In in H1. destruct H1. unfold cfunsigs_filterfun_l in H1.
         destruct a. destruct p0. destruct s; try discriminate. rewrite eq_TypeName_eq in H1. subst.
-        cbn in H2. clear - H2 RefuncDt2.
+        cbn in H2. clear - H2 DtorizeDt2.
         pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
         unfold dts_cdts_disjoint in H. unfold not in H. eapply H...
       }
@@ -7160,14 +7160,14 @@ f_equal.
     * unfold QName in *. rewrite H. cbn in H0. rewrite H in H0...
 Qed.
 
-Corollary redefunc_preserves_cfuns_aux :
+Corollary rectorize_preserves_cfuns_aux :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (RefuncDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
-  (RefuncDt2 : In tn (skeleton_dts (program_skeleton p))),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (DtorizeDt : forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn)
+  (DtorizeDt2 : In tn (skeleton_dts (program_skeleton p))),
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_cfun_bods_for_type tn p = program_cfun_bods_for_type tn pr2.
 Proof with eauto.
 intros.
@@ -7178,13 +7178,13 @@ case_eq (program_cfun_bods_for_type tn p); intros.
     * rewrite filter_app. rewrite map_app. rewrite map_app. rewrite filter_app.
       match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * cfun_bod)) end.
       2:{ rewrite map_map. match goal with [|- _ = _ _ (_ _ ?l)] => replace l with (@nil (ScopedName * list TypeName * TypeName)) end...
-        clear - RefuncDt. generalize dependent (skeleton_dtors (program_skeleton p)). induction d; intros...
+        clear - DtorizeDt. generalize dependent (skeleton_dtors (program_skeleton p)). induction d; intros...
         cbn. unfold cfunsigs_filterfun_g in *. destruct a. destruct p0. destruct s.
-        - apply IHd. intros. apply RefuncDt. right...
+        - apply IHd. intros. apply DtorizeDt. right...
         - case_eq (eq_TypeName tn (fst q)); intros.
-          + exfalso. unfold not in RefuncDt. apply RefuncDt with (d0:=(global q, l, t)); [left|]... cbn.
+          + exfalso. unfold not in DtorizeDt. apply DtorizeDt with (d0:=(global q, l, t)); [left|]... cbn.
             rewrite eq_TypeName_eq in H...
-          + apply IHd. intros. apply RefuncDt. right...
+          + apply IHd. intros. apply DtorizeDt. right...
       }
       rewrite app_nil_r.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => replace l with (@nil (ScopedName * list TypeName * TypeName)) end...
@@ -7210,7 +7210,7 @@ case_eq (program_cfun_bods_for_type tn p); intros.
         intros. destruct a. cbn. destruct q. cbn. instantiate (1:=fun x => eq_TypeName (fst x) tn)...
       }
       intros...
-    * rewrite map_map. cbn. clear. unfold RefuncIII.new_cfun_bods_g.
+    * rewrite map_map. cbn. clear. unfold DtorizeIII.new_cfun_bods_g.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end. induction l...
       cbn. destruct a. case_eq (negb (eq_TypeName tn (fst q))); intros...
       cbn. rewrite negb_true_iff in H. rewrite eq_TypeName_symm in H. rewrite H...
@@ -7218,13 +7218,13 @@ case_eq (program_cfun_bods_for_type tn p); intros.
     * rewrite filter_app. rewrite map_app. rewrite map_app. rewrite filter_app.
       match goal with [|- _ = _ ++ ?l] => replace l with (@nil (ScopedName * cfun_bod)) end.
       2:{ rewrite map_map. match goal with [|- _ = _ _ (_ _ ?l)] => replace l with (@nil (ScopedName * list TypeName * TypeName)) end...
-        clear - RefuncDt. generalize dependent (skeleton_dtors (program_skeleton p)). induction d; intros...
+        clear - DtorizeDt. generalize dependent (skeleton_dtors (program_skeleton p)). induction d; intros...
         cbn. unfold cfunsigs_filterfun_l in *. destruct a. destruct p0. destruct s.
         - case_eq (eq_TypeName tn (fst q)); intros.
-          + exfalso. unfold not in RefuncDt. apply RefuncDt with (d0:=(local q, l, t)); [left|]... cbn.
+          + exfalso. unfold not in DtorizeDt. apply DtorizeDt with (d0:=(local q, l, t)); [left|]... cbn.
             rewrite eq_TypeName_eq in H...
-          + apply IHd. intros. apply RefuncDt. right...
-        - apply IHd. intros. apply RefuncDt. right...
+          + apply IHd. intros. apply DtorizeDt. right...
+        - apply IHd. intros. apply DtorizeDt. right...
       }
       rewrite app_nil_r.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => replace l with (@nil (ScopedName * list TypeName * TypeName)) end...
@@ -7250,17 +7250,17 @@ case_eq (program_cfun_bods_for_type tn p); intros.
         intros. destruct a. cbn. destruct q. cbn. instantiate (1:=fun x => eq_TypeName (fst x) tn)...
       }
       intros...
-    * rewrite map_map. cbn. clear. unfold RefuncIII.new_cfun_bods_l.
+    * rewrite map_map. cbn. clear. unfold DtorizeIII.new_cfun_bods_l.
       match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end. induction l...
       cbn. destruct a. case_eq (negb (eq_TypeName tn (fst q))); intros...
       cbn. rewrite negb_true_iff in H. rewrite eq_TypeName_symm in H. rewrite H...
 - case_eq (snd p0); intros.
-  { eapply redefunc_preserves_cfuns_empty_ctors... }
+  { eapply rectorize_preserves_cfuns_empty_ctors... }
 
   assert (program_cfun_bods_for_type tn p <> []).
   { unfold not. intros. rewrite H3 in H1. discriminate. }
   rewrite <- H1.
-  eapply redefunc_preserves_cfuns_nonempty...
+  eapply rectorize_preserves_cfuns_nonempty...
   { clear - H1 H2. cbn. unfold program_cfun_bods_for_type in H1.
     rewrite filter_app in H1. pose proof (in_eq p0 l) as InAux.
     rewrite <- H1 in InAux. rename H2 into p0Eq. clear - p0Eq InAux.
@@ -7289,7 +7289,7 @@ case_eq (program_cfun_bods_for_type tn p); intros.
         (skeleton_ctors (program_skeleton p))));
       [ unfold gfunsigs_filterfun_l; rewrite filter_In in *;
         destruct H0; split; eauto; rewrite eq_TypeName_symm; eauto | ];
-      apply in_split in H; do 2 destruct H; unfold RefuncIII.new_gfun_bods_l;
+      apply in_split in H; do 2 destruct H; unfold DtorizeIII.new_gfun_bods_l;
       rewrite H; apply not_eq_sym; repeat rewrite map_app; cbn;
       repeat rewrite filter_app; cbn;
       assert (eq_TypeName (fst q) (fst qn') = true);
@@ -7305,7 +7305,7 @@ case_eq (program_cfun_bods_for_type tn p); intros.
         (skeleton_ctors (program_skeleton p))));
       [ unfold gfunsigs_filterfun_g; rewrite filter_In in *;
         destruct H0; split; eauto; rewrite eq_TypeName_symm; eauto | ];
-      apply in_split in H; do 2 destruct H; unfold RefuncIII.new_gfun_bods_g;
+      apply in_split in H; do 2 destruct H; unfold DtorizeIII.new_gfun_bods_g;
       rewrite H; apply not_eq_sym; repeat rewrite map_app; cbn;
       repeat rewrite filter_app; cbn;
       repeat rewrite filter_app; cbn;
@@ -7328,7 +7328,7 @@ case_eq (program_cfun_bods_for_type tn p); intros.
   }
 Qed.
 
-Lemma refunc_dt_aux : forall p tn,
+Lemma dtorize_dt_aux : forall p tn,
   In tn (skeleton_dts (program_skeleton p)) ->
   (forall d, In d (skeleton_dtors (program_skeleton p)) -> fst (unscope (fst (fst d))) <> tn).
 Proof with eauto.
@@ -7341,22 +7341,22 @@ eapply H1...
 Qed.
 
 
-Lemma derefunc_preserves_cfuns_aux :
+Lemma ctorize_dtorize_preserves_cfuns_aux :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (* Necessary in case of empty codatatype to make sure no datatypes are defunc.ed. *)
-  (DefuncCdt : In tn (skeleton_cdts (program_skeleton p))),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (* Necessary in case of empty codatatype to make sure no datatypes are ctorize.ed. *)
+  (CtorizeCdt : In tn (skeleton_cdts (program_skeleton p))),
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_cfun_bods_for_type tn p = program_cfun_bods_for_type tn pr2.
 Proof with eauto.
 intros. subst. cbn.
-unfold DefuncIII.new_cfun_bods_g. unfold DefuncIII.new_cfun_bods_l.
+unfold CtorizeIII.new_cfun_bods_g. unfold CtorizeIII.new_cfun_bods_l.
 repeat rewrite filter_app.
 repeat rewrite map_app. repeat rewrite filter_app. rewrite map_app.
 match goal with [|- ?l' = _] => replace l' with (@nil (ScopedName * cfun_bod)) end.
-2:{ clear - DefuncCdt.
+2:{ clear - CtorizeCdt.
   match goal with [|- _ = ?l] => case_eq l; intros end... exfalso.
   pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)).
   pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)).
@@ -7374,7 +7374,7 @@ match goal with [|- ?l' = _] => replace l' with (@nil (ScopedName * cfun_bod)) e
   pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
   unfold dts_cdts_disjoint in Disj. unfold not in Disj.
   destruct H; rewrite map_map in H; rewrite in_map_iff in H; do 2 destruct H;
-    try apply H0 in H2; try apply H1 in H2; rewrite <- H in DefuncCdt...
+    try apply H0 in H2; try apply H1 in H2; rewrite <- H in CtorizeCdt...
 }
 rewrite <- app_nil_r at 1. f_equal.
 - rewrite filter_app.
@@ -7411,22 +7411,22 @@ rewrite <- app_nil_r at 1. f_equal.
       rewrite eq_TypeName_symm. rewrite H0...
 Qed.
 
-Lemma redefunc_preserves_gfuns_aux :
+Lemma rectorize_preserves_gfuns_aux :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (* Necessary in case of empty datatype to make sure no codatatypes are defunc.ed. *)
-  (RefuncDt : In tn (skeleton_dts (program_skeleton p))),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (* Necessary in case of empty datatype to make sure no codatatypes are ctorize.ed. *)
+  (DtorizeDt : In tn (skeleton_dts (program_skeleton p))),
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_gfun_bods_for_type tn p = program_gfun_bods_for_type tn pr2.
 Proof with eauto.
 intros. subst. cbn.
-unfold RefuncIII.new_gfun_bods_g. unfold RefuncIII.new_gfun_bods_l.
+unfold DtorizeIII.new_gfun_bods_g. unfold DtorizeIII.new_gfun_bods_l.
 repeat rewrite filter_app.
 repeat rewrite map_app. repeat rewrite filter_app. rewrite map_app.
 match goal with [|- ?l' = _] => replace l' with (@nil (ScopedName * gfun_bod)) end.
-2:{ clear - RefuncDt.
+2:{ clear - DtorizeDt.
   match goal with [|- _ = ?l] => case_eq l; intros end... exfalso.
   pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)).
   pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)).
@@ -7444,7 +7444,7 @@ match goal with [|- ?l' = _] => replace l' with (@nil (ScopedName * gfun_bod)) e
   pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)) as Disj.
   unfold dts_cdts_disjoint in Disj. unfold not in Disj.
   destruct H; rewrite map_map in H; rewrite in_map_iff in H; do 2 destruct H;
-    try apply H0 in H2; try apply H1 in H2; rewrite <- H in RefuncDt...
+    try apply H0 in H2; try apply H1 in H2; rewrite <- H in DtorizeDt...
 }
 rewrite <- app_nil_r at 1. f_equal.
 - rewrite filter_app.
@@ -7485,56 +7485,56 @@ Qed.
 
 (* Results for function bodies *)
 
-Theorem derefunc_preserves_gfuns :
+Theorem ctorize_dtorize_preserves_gfuns :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (* Necessary in case of empty codatatype to make sure no datatypes are defunc.ed. *)
-  (DefuncCdt : In tn (skeleton_cdts (program_skeleton p))),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (* Necessary in case of empty codatatype to make sure no datatypes are ctorize.ed. *)
+  (CtorizeCdt : In tn (skeleton_cdts (program_skeleton p))),
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_gfun_bods_for_type tn p = program_gfun_bods_for_type tn pr2.
 Proof with eauto.
-intros. eapply derefunc_preserves_gfuns_aux... apply defunc_cdt_aux...
+intros. eapply ctorize_dtorize_preserves_gfuns_aux... apply ctorize_cdt_aux...
 Qed.
 
-Theorem redefunc_preserves_cfuns :
+Theorem rectorize_preserves_cfuns :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (* Necessary in case of empty datatype to make sure no codatatypes are refunc.ed. *)
-  (RefuncDt : In tn (skeleton_dts (program_skeleton p))),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (* Necessary in case of empty datatype to make sure no codatatypes are dtorize.ed. *)
+  (DtorizeDt : In tn (skeleton_dts (program_skeleton p))),
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_cfun_bods_for_type tn p = program_cfun_bods_for_type tn pr2.
 Proof with eauto.
-intros. eapply redefunc_preserves_cfuns_aux... apply refunc_dt_aux...
+intros. eapply rectorize_preserves_cfuns_aux... apply dtorize_dt_aux...
 Qed.
 
-Theorem derefunc_preserves_cfuns :
+Theorem ctorize_dtorize_preserves_cfuns :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (* Necessary in case of empty codatatype to make sure no datatypes are defunc.ed. *)
-  (DefuncCdt : In tn (skeleton_cdts (program_skeleton p))),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (* Necessary in case of empty codatatype to make sure no datatypes are ctorize.ed. *)
+  (CtorizeCdt : In tn (skeleton_cdts (program_skeleton p))),
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_cfun_bods_for_type tn p = program_cfun_bods_for_type tn pr2.
 Proof with eauto.
-intros. eapply derefunc_preserves_cfuns_aux...
+intros. eapply ctorize_dtorize_preserves_cfuns_aux...
 Qed.
 
-Theorem redefunc_preserves_gfuns :
+Theorem rectorize_preserves_gfuns :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (* Necessary in case of empty datatype to make sure no codatatypes are refunc.ed. *)
-  (RefuncDt : In tn (skeleton_dts (program_skeleton p))),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  (* Necessary in case of empty datatype to make sure no codatatypes are dtorize.ed. *)
+  (DtorizeDt : In tn (skeleton_dts (program_skeleton p))),
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_gfun_bods_for_type tn p = program_gfun_bods_for_type tn pr2.
 Proof with eauto.
-intros. eapply redefunc_preserves_gfuns_aux...
+intros. eapply rectorize_preserves_gfuns_aux...
 Qed.
 
 
@@ -7593,24 +7593,24 @@ Definition dtors_for_type_in_front p tn : Prop :=
      let (y, _) := x in let (n', _) := y in negb (eq_TypeName tn (fst (unscope n'))))
     (skeleton_dtors p).
 
-Theorem derefunc_preserves_skeleton :
+Theorem ctorize_dtorize_preserves_skeleton :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (* Necessary in case of empty codatatype to make sure no datatypes are defunc.ed. *)
-  (DefuncCdt : In tn (skeleton_cdts (program_skeleton p)))
+  (* Necessary in case of empty codatatype to make sure no datatypes are ctorize.ed. *)
+  (CtorizeCdt : In tn (skeleton_cdts (program_skeleton p)))
   (* In other words, the equality of skeletons only holds up to permutation of sigs *)
   (InFront : gfun_sigs_g_for_type_in_front (program_skeleton p) tn
     /\ gfun_sigs_l_for_type_in_front (program_skeleton p) tn
     /\ cdt_for_type_in_front (program_skeleton p) tn
     /\ dtors_for_type_in_front (program_skeleton p) tn),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_skeleton p = program_skeleton pr2.
 Proof with eauto.
 intros.
 assert (skeleton_dts (program_skeleton p) = skeleton_dts (program_skeleton pr2)).
-{ subst. cbn. rewrite eq_TypeName_refl. cbn. clear - DefuncCdt.
+{ subst. cbn. rewrite eq_TypeName_refl. cbn. clear - CtorizeCdt.
   assert (forall x, In x (skeleton_dts (program_skeleton p)) -> In x (skeleton_dts (program_skeleton p))).
   { intros... }
   generalize dependent H. generalize (skeleton_dts (program_skeleton p)) at - 2.
@@ -7631,7 +7631,7 @@ assert (skeleton_ctors (program_skeleton p) = skeleton_ctors (program_skeleton p
     + cbn. case_eq (eq_TypeName (fst (fst a)) tn); intros; unfold QName in *; rewrite H...
       cbn. rewrite filter_app. cbn. rewrite eq_TypeName_symm. rewrite H. cbn.
       rewrite <- filter_app...
-  - clear - DefuncCdt.
+  - clear - CtorizeCdt.
     assert (forall x, In x (skeleton_ctors (program_skeleton p)) -> In x (skeleton_ctors (program_skeleton p))).
     { intros... }
     generalize dependent H. generalize (skeleton_ctors (program_skeleton p)) at - 2.
@@ -7647,13 +7647,13 @@ assert (skeleton_cdts (program_skeleton p) = skeleton_cdts (program_skeleton pr2
 { subst. cbn. unfold new_cdts. destruct InFront as [_ [_ [Done _]]]... }
 assert (skeleton_dtors (program_skeleton p) = skeleton_dtors (program_skeleton pr2)).
 { subst. cbn. unfold new_dtors. rewrite (proj2 (proj2 (proj2 InFront))) at 1. f_equal.
-  unfold DefuncI.new_cfunsigs_g. unfold DefuncI.new_cfunsigs_l.
+  unfold CtorizeI.new_cfunsigs_g. unfold CtorizeI.new_cfunsigs_l.
   do 2 rewrite filter_app.
   assert (filter
      (fun x : TypeName * Name * list TypeName * TypeName =>
       eq_TypeName (fst (fst (fst x))) tn)
      (skeleton_cfun_sigs_g (program_skeleton p)) = []).
-  { clear - DefuncCdt. match goal with [|- ?l = _] => case_eq l; intros end...
+  { clear - CtorizeCdt. match goal with [|- ?l = _] => case_eq l; intros end...
     exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear H.
     rewrite filter_In in H0. destruct H0. rewrite eq_TypeName_eq in H0. subst.
     pose proof (skeleton_cfun_sigs_in_dts_g (program_skeleton p)).
@@ -7665,7 +7665,7 @@ assert (skeleton_dtors (program_skeleton p) = skeleton_dtors (program_skeleton p
      (fun x : TypeName * Name * list TypeName * TypeName =>
       eq_TypeName (fst (fst (fst x))) tn)
      (skeleton_cfun_sigs_l (program_skeleton p)) = []).
-  { clear - DefuncCdt. match goal with [|- ?l = _] => case_eq l; intros end...
+  { clear - CtorizeCdt. match goal with [|- ?l = _] => case_eq l; intros end...
     exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear H.
     rewrite filter_In in H0. destruct H0. rewrite eq_TypeName_eq in H0. subst.
     pose proof (skeleton_cfun_sigs_in_dts_l (program_skeleton p)).
@@ -7700,7 +7700,7 @@ assert (skeleton_dtors (program_skeleton p) = skeleton_dtors (program_skeleton p
 assert (skeleton_fun_sigs (program_skeleton p) = skeleton_fun_sigs (program_skeleton pr2)).
 { subst... }
 assert (skeleton_cfun_sigs_g (program_skeleton p) = skeleton_cfun_sigs_g (program_skeleton pr2)).
-{ subst. cbn. unfold DefuncI.new_cfunsigs_g. rewrite <- app_nil_l at 1. rewrite filter_app. f_equal.
+{ subst. cbn. unfold CtorizeI.new_cfunsigs_g. rewrite <- app_nil_l at 1. rewrite filter_app. f_equal.
   - match goal with [|- _ = ?l] => case_eq l; intros end...
     exfalso. clear - H. pose proof (in_eq p0 l). rewrite <- H in H0.
     rewrite filter_In in H0. rewrite in_map_iff in H0. do 3 destruct H0.
@@ -7723,7 +7723,7 @@ assert (skeleton_cfun_sigs_g (program_skeleton p) = skeleton_cfun_sigs_g (progra
     + cbn. f_equal. apply IHc. intros. apply H. right...
 }
 assert (skeleton_cfun_sigs_l (program_skeleton p) = skeleton_cfun_sigs_l (program_skeleton pr2)).
-{ subst. cbn. unfold DefuncI.new_cfunsigs_l. rewrite <- app_nil_l at 1. rewrite filter_app. f_equal.
+{ subst. cbn. unfold CtorizeI.new_cfunsigs_l. rewrite <- app_nil_l at 1. rewrite filter_app. f_equal.
   - match goal with [|- _ = ?l] => case_eq l; intros end...
     exfalso. clear - H. pose proof (in_eq p0 l). rewrite <- H in H0.
     rewrite filter_In in H0. rewrite in_map_iff in H0. do 3 destruct H0.
@@ -7746,7 +7746,7 @@ assert (skeleton_cfun_sigs_l (program_skeleton p) = skeleton_cfun_sigs_l (progra
     + cbn. f_equal. apply IHc. intros. apply H. right...
 }
 assert (skeleton_gfun_sigs_g (program_skeleton p) = skeleton_gfun_sigs_g (program_skeleton pr2)).
-{ subst. cbn. unfold DefuncI.new_gfunsigs_g. unfold computeNewDatatype. unfold gfunsigs_mapfun.
+{ subst. cbn. unfold CtorizeI.new_gfunsigs_g. unfold computeNewDatatype. unfold gfunsigs_mapfun.
   rewrite (proj1 InFront) at 1. rewrite filter_ext with (f:=(fun x : TypeName * Name * list TypeName =>
     let (n', _) := x in negb (eq_TypeName tn (fst n'))))
     (g:=fun x : TypeName * Name * list TypeName => negb (eq_TypeName (fst (fst x)) tn)).
@@ -7754,7 +7754,7 @@ assert (skeleton_gfun_sigs_g (program_skeleton p) = skeleton_gfun_sigs_g (progra
   unfold QName. f_equal. rewrite filter_app. unfold Constructor.
   replace (filter (gfunsigs_filterfun_g tn) (skeleton_ctors (program_skeleton p))) with (@nil (ScopedName * list TypeName)).
   2:{ case_eq (filter (gfunsigs_filterfun_g tn) (skeleton_ctors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - DefuncCdt H0.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - CtorizeCdt H0.
     rewrite filter_In in H0. destruct H0.
     pose proof (skeleton_dts_ctors_in_dts (program_skeleton p)).
     pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
@@ -7777,7 +7777,7 @@ assert (skeleton_gfun_sigs_g (program_skeleton p) = skeleton_gfun_sigs_g (progra
   - rewrite eq_TypeName_symm. unfold QName in *. rewrite H...
 }
 assert (skeleton_gfun_sigs_l (program_skeleton p) = skeleton_gfun_sigs_l (program_skeleton pr2)).
-{ subst. cbn. unfold DefuncI.new_gfunsigs_l. unfold computeNewDatatype. unfold gfunsigs_mapfun.
+{ subst. cbn. unfold CtorizeI.new_gfunsigs_l. unfold computeNewDatatype. unfold gfunsigs_mapfun.
   rewrite (proj1 (proj2 InFront)) at 1. rewrite filter_ext with (f:=(fun x : TypeName * Name * list TypeName =>
     let (n', _) := x in negb (eq_TypeName tn (fst n'))))
     (g:=fun x : TypeName * Name * list TypeName => negb (eq_TypeName (fst (fst x)) tn)).
@@ -7785,7 +7785,7 @@ assert (skeleton_gfun_sigs_l (program_skeleton p) = skeleton_gfun_sigs_l (progra
   unfold QName. f_equal. rewrite filter_app. unfold Constructor.
   replace (filter (gfunsigs_filterfun_l tn) (skeleton_ctors (program_skeleton p))) with (@nil (ScopedName * list TypeName)).
   2:{ case_eq (filter (gfunsigs_filterfun_l tn) (skeleton_ctors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - DefuncCdt H0.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - CtorizeCdt H0.
     rewrite filter_In in H0. destruct H0.
     pose proof (skeleton_dts_ctors_in_dts (program_skeleton p)).
     pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
@@ -7847,29 +7847,29 @@ Definition gfun_bods_l_for_type_in_front p tn : Prop :=
     filter (fun x => eq_TypeName (fst (fst x)) tn) (program_gfun_bods_l p) ++
     filter (fun x => negb (eq_TypeName (fst (fst x)) tn)) (program_gfun_bods_l p).
 
-Theorem derefunc_preserves_prog_aux :
+Theorem ctorize_dtorize_preserves_prog_aux :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (* Necessary in case of empty codatatype to make sure no datatypes are defunc.ed. *)
-  (DefuncCdt : In tn (skeleton_cdts (program_skeleton p)))
+  (* Necessary in case of empty codatatype to make sure no datatypes are ctorize.ed. *)
+  (CtorizeCdt : In tn (skeleton_cdts (program_skeleton p)))
   (* In other words, the equality of programs only holds up to permutation of fundefs *)
   (InFront : gfun_bods_g_for_type_in_front p tn /\ gfun_bods_l_for_type_in_front p tn)
   (InFrontSigs : gfun_sigs_g_for_type_in_front (program_skeleton p) tn
     /\ gfun_sigs_l_for_type_in_front (program_skeleton p) tn
     /\ cdt_for_type_in_front (program_skeleton p) tn
     /\ dtors_for_type_in_front (program_skeleton p) tn),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   p = pr2.
 Proof with eauto.
 intros.
-assert (program_skeleton p = program_skeleton pr2). { eapply derefunc_preserves_skeleton... }
+assert (program_skeleton p = program_skeleton pr2). { eapply ctorize_dtorize_preserves_skeleton... }
 assert (program_fun_bods p = program_fun_bods pr2).
-{ subst. cbn. unfold DefuncIII.new_fun_bods. rewrite map_map.
+{ subst. cbn. unfold CtorizeIII.new_fun_bods. rewrite map_map.
   rewrite map_ext_in with (g:=id); try solve [rewrite map_id; eauto].
   intros. unfold id. cbn. rewrite surjective_pairing. f_equal.
-  apply derefunc_exp_inverse with (p:=p); try solve [apply defunc_cdt_aux; eauto]...
+  apply ctorize_dtorize_exp_inverse with (p:=p); try solve [apply ctorize_cdt_aux; eauto]...
   right. right. apply in_map...
 }
 assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
@@ -7877,7 +7877,7 @@ assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
   match goal with [_ : c = _ ?p'' |- _] => set (p':=p'') in * end.
   pose proof Heqc as Work.
   cbn in Work.
-  unfold DefuncIII.new_cfun_bods_g in *.
+  unfold CtorizeIII.new_cfun_bods_g in *.
   rewrite map_app in Work. rewrite map_map in Work. rewrite filter_app in Work.
   match goal with [_ : c = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
@@ -7892,7 +7892,7 @@ assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
   { unfold rhs2. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
     2:{ intros. rewrite map_map. rewrite map_ext_in with (g:=id).
       2:{ intros. cbn. unfold id.
-          rewrite derefunc_exp_inverse with (p:=p); try solve [apply defunc_cdt_aux; eauto]...
+          rewrite ctorize_dtorize_exp_inverse with (p:=p); try solve [apply ctorize_cdt_aux; eauto]...
         - rewrite <- surjective_pairing...
         - clear - H H0. right. left. apply in_map. rewrite in_flat_map. unfold program_cfun_bods.
           destruct a. exists (global q,l). split...
@@ -7900,7 +7900,7 @@ assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
       }
       unfold id. rewrite map_id. symmetry. apply surjective_pairing.
     }
-    unfold id. rewrite map_id. clear - DefuncCdt.
+    unfold id. rewrite map_id. clear - CtorizeCdt.
     assert (forall x, In x (program_cfun_bods_g p) -> In x (program_cfun_bods_g p)).
     { intros... }
     generalize dependent H. generalize (program_cfun_bods_g p) at - 2. induction c; intros...
@@ -7922,7 +7922,7 @@ assert (program_cfun_bods_l p = program_cfun_bods_l pr2).
   match goal with [_ : c = _ ?p'' |- _] => set (p':=p'') in * end.
   pose proof Heqc as Work.
   cbn in Work.
-  unfold DefuncIII.new_cfun_bods_l in *.
+  unfold CtorizeIII.new_cfun_bods_l in *.
   rewrite map_app in Work. rewrite map_map in Work. rewrite filter_app in Work.
   match goal with [_ : c = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
@@ -7937,7 +7937,7 @@ assert (program_cfun_bods_l p = program_cfun_bods_l pr2).
   { unfold rhs2. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
     2:{ intros. rewrite map_map. rewrite map_ext_in with (g:=id).
       2:{ intros. cbn. unfold id.
-          rewrite derefunc_exp_inverse with (p:=p); try solve [apply defunc_cdt_aux; eauto]...
+          rewrite ctorize_dtorize_exp_inverse with (p:=p); try solve [apply ctorize_cdt_aux; eauto]...
         - rewrite <- surjective_pairing...
         - clear - H H0. right. left. apply in_map. rewrite in_flat_map. unfold program_cfun_bods.
           destruct a. exists (local q,l). split...
@@ -7945,7 +7945,7 @@ assert (program_cfun_bods_l p = program_cfun_bods_l pr2).
       }
       unfold id. rewrite map_id. symmetry. apply surjective_pairing.
     }
-    unfold id. rewrite map_id. clear - DefuncCdt.
+    unfold id. rewrite map_id. clear - CtorizeCdt.
     assert (forall x, In x (program_cfun_bods_l p) -> In x (program_cfun_bods_l p)).
     { intros... }
     generalize dependent H. generalize (program_cfun_bods_l p) at - 2. induction c; intros...
@@ -7968,7 +7968,7 @@ assert (program_gfun_bods_g p = program_gfun_bods_g pr2).
   pose proof Heqg as Work.
   cbn in Work. match goal with [_ : g = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
-  unfold DefuncIII.new_gfun_bods_g in *.
+  unfold CtorizeIII.new_gfun_bods_g in *.
   assert (rhs1 = filter (fun x => eq_TypeName (fst (fst x)) tn) g) as Work1.
   { rewrite Work. rewrite filter_app. replace (filter _ rhs2) with (@nil (QName * gfun_bod)).
     2:{ unfold rhs2. clear. match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end.
@@ -8006,7 +8006,7 @@ assert (program_gfun_bods_g p = program_gfun_bods_g pr2).
     }
     intros...
   }
-  erewrite <- derefunc_preserves_gfuns with (p:=p) in Work1'...
+  erewrite <- ctorize_dtorize_preserves_gfuns with (p:=p) in Work1'...
   2:{ unfold p'... }
   rewrite (proj1 InFront). rewrite Work. rewrite Work1'. unfold rhs2.
   unfold program_gfun_bods_for_type. do 2 rewrite filter_app. do 2 rewrite filter_compose.
@@ -8025,7 +8025,7 @@ assert (program_gfun_bods_g p = program_gfun_bods_g pr2).
   rewrite <- filter_map. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
   2:{ intros. destruct a. cbn. unfold id. f_equal. rewrite map_map. cbn.
     rewrite map_ext_in with (g:=id); [ rewrite map_id | ]...
-    intros. rewrite derefunc_exp_inverse with (p:=p); try solve [apply defunc_cdt_aux; eauto]...
+    intros. rewrite ctorize_dtorize_exp_inverse with (p:=p); try solve [apply ctorize_cdt_aux; eauto]...
     - unfold id. rewrite <- surjective_pairing...
     - clear - H H0. left. apply in_map. rewrite in_flat_map. unfold program_gfun_bods.
       rewrite filter_In in H. destruct H. exists (global q,l). split...
@@ -8039,7 +8039,7 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
   pose proof Heqg as Work.
   cbn in Work. match goal with [_ : g = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
-  unfold DefuncIII.new_gfun_bods_l in *.
+  unfold CtorizeIII.new_gfun_bods_l in *.
   assert (rhs1 = filter (fun x => eq_TypeName (fst (fst x)) tn) g) as Work1.
   { rewrite Work. rewrite filter_app. replace (filter _ rhs2) with (@nil (QName * gfun_bod)).
     2:{ unfold rhs2. clear. match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end.
@@ -8077,7 +8077,7 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
     }
     intros...
   }
-  erewrite <- derefunc_preserves_gfuns with (p:=p) in Work1'...
+  erewrite <- ctorize_dtorize_preserves_gfuns with (p:=p) in Work1'...
   2:{ unfold p'... }
   rewrite (proj2 InFront). rewrite Work. rewrite Work1'. unfold rhs2.
   unfold program_gfun_bods_for_type. do 2 rewrite filter_app. do 2 rewrite filter_compose.
@@ -8096,7 +8096,7 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
   rewrite <- filter_map. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
   2:{ intros. destruct a. cbn. unfold id. f_equal. rewrite map_map. cbn.
     rewrite map_ext_in with (g:=id); [ rewrite map_id | ]...
-    intros. rewrite derefunc_exp_inverse with (p:=p); try solve [apply defunc_cdt_aux; eauto]...
+    intros. rewrite ctorize_dtorize_exp_inverse with (p:=p); try solve [apply ctorize_cdt_aux; eauto]...
     - unfold id. rewrite <- surjective_pairing...
     - clear - H H0. left. apply in_map. rewrite in_flat_map. unfold program_gfun_bods.
       rewrite filter_In in H. destruct H. exists (local q,l). split...
@@ -8104,16 +8104,16 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
    }
    rewrite map_id. apply filter_ext. intros. f_equal. apply eq_TypeName_symm.
 }
-subst. unfold refunctionalize_program. destruct p. apply prog_split...
+subst. unfold destructorize_program. destruct p. apply prog_split...
 Qed.
 
-Lemma global_before_local_ctors_defunc :
+Lemma global_before_local_ctors_ctorize :
 forall p tn P1 P2 P3 P4 P5 (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (DefuncCdt : In tn (skeleton_cdts (program_skeleton p))),
-  global_before_local_ctors (skeleton_ctors (program_skeleton (defunctionalize_program p tn P1 P2 P3 P4 P5))).
+  (CtorizeCdt : In tn (skeleton_cdts (program_skeleton p))),
+  global_before_local_ctors (skeleton_ctors (program_skeleton (constructorize_program p tn P1 P2 P3 P4 P5))).
 Proof with eauto.
 intros. unfold global_before_local_ctors in *. intros.
-cbn. clear - GLc DefuncCdt. case_eq (eq_TypeName tn tn0); intros.
+cbn. clear - GLc CtorizeCdt. case_eq (eq_TypeName tn tn0); intros.
 - rewrite eq_TypeName_eq in H. subst. repeat rewrite filter_app.
   match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _ ++ ?l3] =>
     replace l1 with (@nil Constructor); [ replace l2 with (@nil Constructor) |];
@@ -8121,14 +8121,14 @@ cbn. clear - GLc DefuncCdt. case_eq (eq_TypeName tn tn0); intros.
   end.
   2:{ case_eq (filter (fun x : ScopedName * list TypeName => eq_TypeName (fst (unscope (fst x))) tn0)
         (skeleton_ctors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 DefuncCdt.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 CtorizeCdt.
     rewrite filter_In in H0. destruct H0. pose proof (skeleton_dts_ctors_in_dts (program_skeleton p)).
     unfold dts_ctors_in_dts in H1. rewrite Forall_forall in H1. apply H1 in H.
     rewrite eq_TypeName_eq in H0. subst. pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
     unfold dts_cdts_disjoint in H0. unfold not in H0...
   }
   2:{ case_eq (filter (gfunsigs_filterfun_l tn0) (skeleton_ctors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 DefuncCdt.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 CtorizeCdt.
     rewrite filter_In in H0. destruct H0. pose proof (skeleton_dts_ctors_in_dts (program_skeleton p)).
     unfold dts_ctors_in_dts in H1. rewrite Forall_forall in H1. apply H1 in H.
     unfold gfunsigs_filterfun_l in H0. destruct p0. destruct s; try discriminate.
@@ -8136,7 +8136,7 @@ cbn. clear - GLc DefuncCdt. case_eq (eq_TypeName tn tn0); intros.
     unfold dts_cdts_disjoint in H0. unfold not in H0...
   }
   2:{ case_eq (filter (gfunsigs_filterfun_g tn0) (skeleton_ctors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 DefuncCdt.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 CtorizeCdt.
     rewrite filter_In in H0. destruct H0. pose proof (skeleton_dts_ctors_in_dts (program_skeleton p)).
     unfold dts_ctors_in_dts in H1. rewrite Forall_forall in H1. apply H1 in H.
     unfold gfunsigs_filterfun_g in H0. destruct p0. destruct s; try discriminate.
@@ -8220,19 +8220,19 @@ Definition ctors_for_type_in_front p tn : Prop :=
      let (n', _) := x in negb (eq_TypeName tn (fst (unscope n'))))
     (skeleton_ctors p).
 
-Theorem redefunc_preserves_skeleton :
+Theorem rectorize_preserves_skeleton :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (* Necessary in case of empty datatype to make sure no codatatypes are defunc.ed. *)
-  (RefuncDt : In tn (skeleton_dts (program_skeleton p)))
+  (* Necessary in case of empty datatype to make sure no codatatypes are ctorize.ed. *)
+  (DtorizeDt : In tn (skeleton_dts (program_skeleton p)))
   (* In other words, the equality of skeletons only holds up to permutation of sigs *)
   (InFront : cfun_sigs_g_for_type_in_front (program_skeleton p) tn
     /\ cfun_sigs_l_for_type_in_front (program_skeleton p) tn
     /\ dt_for_type_in_front (program_skeleton p) tn
     /\ ctors_for_type_in_front (program_skeleton p) tn),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   program_skeleton p = program_skeleton pr2.
 Proof with eauto.
 intros.
@@ -8246,7 +8246,7 @@ assert (skeleton_ctors (program_skeleton p) = skeleton_ctors (program_skeleton p
      (fun x : TypeName * Name * list TypeName =>
       eq_TypeName (fst (fst x)) tn)
      (skeleton_gfun_sigs_g (program_skeleton p)) = []).
-  { clear - RefuncDt. match goal with [|- ?l = _] => case_eq l; intros end...
+  { clear - DtorizeDt. match goal with [|- ?l = _] => case_eq l; intros end...
     exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear H.
     rewrite filter_In in H0. destruct H0. rewrite eq_TypeName_eq in H0. subst.
     pose proof (skeleton_gfun_sigs_in_cdts_g (program_skeleton p)).
@@ -8258,7 +8258,7 @@ assert (skeleton_ctors (program_skeleton p) = skeleton_ctors (program_skeleton p
      (fun x : TypeName * Name * list TypeName =>
       eq_TypeName (fst (fst x)) tn)
      (skeleton_gfun_sigs_l (program_skeleton p)) = []).
-  { clear - RefuncDt. match goal with [|- ?l = _] => case_eq l; intros end...
+  { clear - DtorizeDt. match goal with [|- ?l = _] => case_eq l; intros end...
     exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear H.
     rewrite filter_In in H0. destruct H0. rewrite eq_TypeName_eq in H0. subst.
     pose proof (skeleton_gfun_sigs_in_cdts_l (program_skeleton p)).
@@ -8291,7 +8291,7 @@ assert (skeleton_ctors (program_skeleton p) = skeleton_ctors (program_skeleton p
   - intros. destruct a. cbn. apply eq_TypeName_symm.
 }
 assert (skeleton_cdts (program_skeleton p) = skeleton_cdts (program_skeleton pr2)).
-{ subst. cbn. rewrite eq_TypeName_refl. cbn. clear - RefuncDt.
+{ subst. cbn. rewrite eq_TypeName_refl. cbn. clear - DtorizeDt.
   assert (forall x, In x (skeleton_cdts (program_skeleton p)) -> In x (skeleton_cdts (program_skeleton p))).
   { intros... }
   generalize dependent H. generalize (skeleton_cdts (program_skeleton p)) at - 2.
@@ -8312,7 +8312,7 @@ assert (skeleton_dtors (program_skeleton p) = skeleton_dtors (program_skeleton p
     + cbn. case_eq (eq_TypeName (fst (fst (fst a))) tn); intros; unfold QName in *; rewrite H...
       cbn. rewrite filter_app. cbn. rewrite eq_TypeName_symm. rewrite H. cbn.
       rewrite <- filter_app...
-  - clear - RefuncDt.
+  - clear - DtorizeDt.
     assert (forall x, In x (skeleton_dtors (program_skeleton p)) -> In x (skeleton_dtors (program_skeleton p))).
     { intros... }
     generalize dependent H. generalize (skeleton_dtors (program_skeleton p)) at - 2.
@@ -8335,7 +8335,7 @@ assert (skeleton_cfun_sigs_g (program_skeleton p) = skeleton_cfun_sigs_g (progra
   unfold QName. f_equal. rewrite filter_app. unfold Destructor.
   replace (filter (cfunsigs_filterfun_g tn) (skeleton_dtors (program_skeleton p))) with (@nil (ScopedName * list TypeName * TypeName)).
   2:{ case_eq (filter (cfunsigs_filterfun_g tn) (skeleton_dtors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - RefuncDt H0.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - DtorizeDt H0.
     rewrite filter_In in H0. destruct H0.
     pose proof (skeleton_cdts_dtors_in_cdts (program_skeleton p)).
     pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
@@ -8366,7 +8366,7 @@ assert (skeleton_cfun_sigs_l (program_skeleton p) = skeleton_cfun_sigs_l (progra
   unfold QName. f_equal. rewrite filter_app. unfold Destructor.
   replace (filter (cfunsigs_filterfun_l tn) (skeleton_dtors (program_skeleton p))) with (@nil (ScopedName * list TypeName * TypeName)).
   2:{ case_eq (filter (cfunsigs_filterfun_l tn) (skeleton_dtors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - RefuncDt H0.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - DtorizeDt H0.
     rewrite filter_In in H0. destruct H0.
     pose proof (skeleton_cdts_dtors_in_cdts (program_skeleton p)).
     pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
@@ -8450,29 +8450,29 @@ Definition cfun_bods_l_for_type_in_front p tn : Prop :=
     filter (fun x => eq_TypeName (fst (fst x)) tn) (program_cfun_bods_l p) ++
     filter (fun x => negb (eq_TypeName (fst (fst x)) tn)) (program_cfun_bods_l p).
 
-Theorem redefunc_preserves_prog_aux :
+Theorem rectorize_preserves_prog_aux :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
-  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))))
+  (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (* Necessary in case of empty datatype to make sure no codatatypes are defunc.ed. *)
-  (RefuncDt : In tn (skeleton_dts (program_skeleton p)))
+  (* Necessary in case of empty datatype to make sure no codatatypes are ctorize.ed. *)
+  (DtorizeDt : In tn (skeleton_dts (program_skeleton p)))
   (* In other words, the equality of programs only holds up to permutation of fundefs *)
   (InFront : cfun_bods_g_for_type_in_front p tn /\ cfun_bods_l_for_type_in_front p tn)
   (InFrontSigs : cfun_sigs_g_for_type_in_front (program_skeleton p) tn
     /\ cfun_sigs_l_for_type_in_front (program_skeleton p) tn
     /\ dt_for_type_in_front (program_skeleton p) tn
     /\ ctors_for_type_in_front (program_skeleton p) tn),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   p = pr2.
 Proof with eauto.
 intros.
-assert (program_skeleton p = program_skeleton pr2). { eapply redefunc_preserves_skeleton... }
+assert (program_skeleton p = program_skeleton pr2). { eapply rectorize_preserves_skeleton... }
 assert (program_fun_bods p = program_fun_bods pr2).
-{ subst. cbn. unfold RefuncIII.new_fun_bods. rewrite map_map.
+{ subst. cbn. unfold DtorizeIII.new_fun_bods. rewrite map_map.
   rewrite map_ext_in with (g:=id); try solve [rewrite map_id; eauto].
   intros. unfold id. cbn. rewrite surjective_pairing. f_equal.
-  apply redefunc_exp_inverse with (p:=p); try solve [apply refunc_dt_aux; eauto]...
+  apply rectorize_exp_inverse with (p:=p); try solve [apply dtorize_dt_aux; eauto]...
   right. right. apply in_map...
 }
 assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
@@ -8481,7 +8481,7 @@ assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
   pose proof Heqc as Work.
   cbn in Work. match goal with [_ : c = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
-  unfold RefuncIII.new_cfun_bods_g in *.
+  unfold DtorizeIII.new_cfun_bods_g in *.
   assert (rhs1 = filter (fun x => eq_TypeName (fst (fst x)) tn) c) as Work1.
   { rewrite Work. rewrite filter_app. replace (filter _ rhs2) with (@nil (QName * cfun_bod)).
     2:{ unfold rhs2. clear. match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end.
@@ -8519,7 +8519,7 @@ assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
     }
     intros...
   }
-  erewrite <- redefunc_preserves_cfuns with (p:=p) in Work1'...
+  erewrite <- rectorize_preserves_cfuns with (p:=p) in Work1'...
   2:{ unfold p'... }
   rewrite (proj1 InFront). rewrite Work. rewrite Work1'. unfold rhs2.
   unfold program_cfun_bods_for_type. do 2 rewrite filter_app. do 2 rewrite filter_compose.
@@ -8538,7 +8538,7 @@ assert (program_cfun_bods_g p = program_cfun_bods_g pr2).
   rewrite <- filter_map. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
   2:{ intros. destruct a. cbn. unfold id. f_equal. rewrite map_map. cbn.
     rewrite map_ext_in with (g:=id); [ rewrite map_id | ]...
-    intros. rewrite redefunc_exp_inverse with (p:=p); try solve [apply refunc_dt_aux; eauto]...
+    intros. rewrite rectorize_exp_inverse with (p:=p); try solve [apply dtorize_dt_aux; eauto]...
     - unfold id. rewrite <- surjective_pairing...
     - clear - H H0. left. apply in_map. rewrite in_flat_map. unfold program_gfun_bods.
       rewrite filter_In in H. destruct H. exists (global q,l). split...
@@ -8552,7 +8552,7 @@ assert (program_cfun_bods_l p = program_cfun_bods_l pr2).
   pose proof Heqc as Work.
   cbn in Work. match goal with [_ : c = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
-  unfold RefuncIII.new_cfun_bods_l in *.
+  unfold DtorizeIII.new_cfun_bods_l in *.
   assert (rhs1 = filter (fun x => eq_TypeName (fst (fst x)) tn) c) as Work1.
   { rewrite Work. rewrite filter_app. replace (filter _ rhs2) with (@nil (QName * cfun_bod)).
     2:{ unfold rhs2. clear. match goal with [|- _ = _ _ (_ _ (_ _ ?l))] => generalize l end.
@@ -8590,7 +8590,7 @@ assert (program_cfun_bods_l p = program_cfun_bods_l pr2).
     }
     intros...
   }
-  erewrite <- redefunc_preserves_cfuns with (p:=p) in Work1'...
+  erewrite <- rectorize_preserves_cfuns with (p:=p) in Work1'...
   2:{ unfold p'... }
   rewrite (proj2 InFront). rewrite Work. rewrite Work1'. unfold rhs2.
   unfold program_cfun_bods_for_type. do 2 rewrite filter_app. do 2 rewrite filter_compose.
@@ -8609,7 +8609,7 @@ assert (program_cfun_bods_l p = program_cfun_bods_l pr2).
   rewrite <- filter_map. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
   2:{ intros. destruct a. cbn. unfold id. f_equal. rewrite map_map. cbn.
     rewrite map_ext_in with (g:=id); [ rewrite map_id | ]...
-    intros. rewrite redefunc_exp_inverse with (p:=p); try solve [apply refunc_dt_aux; eauto]...
+    intros. rewrite rectorize_exp_inverse with (p:=p); try solve [apply dtorize_dt_aux; eauto]...
     - unfold id. rewrite <- surjective_pairing...
     - clear - H H0. left. apply in_map. rewrite in_flat_map. unfold program_cfun_bods.
       rewrite filter_In in H. destruct H. exists (local q,l). split...
@@ -8622,7 +8622,7 @@ assert (program_gfun_bods_g p = program_gfun_bods_g pr2).
   match goal with [_ : g = _ ?p'' |- _] => set (p':=p'') in * end.
   pose proof Heqg as Work.
   cbn in Work.
-  unfold RefuncIII.new_gfun_bods_g in *.
+  unfold DtorizeIII.new_gfun_bods_g in *.
   rewrite map_app in Work. rewrite map_map in Work. rewrite filter_app in Work.
   match goal with [_ : g = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
@@ -8637,7 +8637,7 @@ assert (program_gfun_bods_g p = program_gfun_bods_g pr2).
   { unfold rhs2. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
     2:{ intros. rewrite map_map. rewrite map_ext_in with (g:=id).
       2:{ intros. cbn. unfold id.
-          rewrite redefunc_exp_inverse with (p:=p); try solve [apply refunc_dt_aux; eauto]...
+          rewrite rectorize_exp_inverse with (p:=p); try solve [apply dtorize_dt_aux; eauto]...
         - rewrite <- surjective_pairing...
         - clear - H H0. right. left. apply in_map. rewrite in_flat_map. unfold program_cfun_bods.
           destruct a. exists (global q,l). split...
@@ -8645,7 +8645,7 @@ assert (program_gfun_bods_g p = program_gfun_bods_g pr2).
       }
       unfold id. rewrite map_id. symmetry. apply surjective_pairing.
     }
-    unfold id. rewrite map_id. clear - RefuncDt.
+    unfold id. rewrite map_id. clear - DtorizeDt.
     assert (forall x, In x (program_gfun_bods_g p) -> In x (program_gfun_bods_g p)).
     { intros... }
     generalize dependent H. generalize (program_gfun_bods_g p) at - 2. induction g; intros...
@@ -8667,7 +8667,7 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
   match goal with [_ : g = _ ?p'' |- _] => set (p':=p'') in * end.
   pose proof Heqg as Work.
   cbn in Work.
-  unfold RefuncIII.new_gfun_bods_l in *.
+  unfold DtorizeIII.new_gfun_bods_l in *.
   rewrite map_app in Work. rewrite map_map in Work. rewrite filter_app in Work.
   match goal with [_ : g = ?rhs1' ++ ?rhs2' |- _] =>
     set (rhs1:=rhs1') in Work; set (rhs2:=rhs2') in Work end.
@@ -8682,7 +8682,7 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
   { unfold rhs2. rewrite map_map. cbn. rewrite map_ext_in with (g:=id).
     2:{ intros. rewrite map_map. rewrite map_ext_in with (g:=id).
       2:{ intros. cbn. unfold id.
-          rewrite redefunc_exp_inverse with (p:=p); try solve [apply refunc_dt_aux; eauto]...
+          rewrite rectorize_exp_inverse with (p:=p); try solve [apply dtorize_dt_aux; eauto]...
         - rewrite <- surjective_pairing...
         - clear - H H0. right. left. apply in_map. rewrite in_flat_map. unfold program_cfun_bods.
           destruct a. exists (local q,l). split...
@@ -8690,7 +8690,7 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
       }
       unfold id. rewrite map_id. symmetry. apply surjective_pairing.
     }
-    unfold id. rewrite map_id. clear - RefuncDt.
+    unfold id. rewrite map_id. clear - DtorizeDt.
     assert (forall x, In x (program_gfun_bods_l p) -> In x (program_gfun_bods_l p)).
     { intros... }
     generalize dependent H. generalize (program_gfun_bods_l p) at - 2. induction g; intros...
@@ -8707,16 +8707,16 @@ assert (program_gfun_bods_l p = program_gfun_bods_l pr2).
   }
   rewrite Work. rewrite Work1. rewrite Work2...
 }
-subst. unfold defunctionalize_program. destruct p. apply prog_split...
+subst. unfold constructorize_program. destruct p. apply prog_split...
 Qed.
 
-Lemma global_before_local_dtors_refunc :
+Lemma global_before_local_dtors_dtorize :
 forall p tn P1 P2 P3 P4 P5 (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (RefuncDt : In tn (skeleton_dts (program_skeleton p))),
-  global_before_local_dtors (skeleton_dtors (program_skeleton (refunctionalize_program p tn P1 P2 P3 P4 P5))).
+  (DtorizeDt : In tn (skeleton_dts (program_skeleton p))),
+  global_before_local_dtors (skeleton_dtors (program_skeleton (destructorize_program p tn P1 P2 P3 P4 P5))).
 Proof with eauto.
 intros. unfold global_before_local_dtors in *. intros.
-cbn. clear - GLd RefuncDt. case_eq (eq_TypeName tn tn0); intros.
+cbn. clear - GLd DtorizeDt. case_eq (eq_TypeName tn tn0); intros.
 - rewrite eq_TypeName_eq in H. subst. repeat rewrite filter_app.
   match goal with [|- (_ ++ ?l1) ++ (_ ++ ?l2) = _ ++ ?l3] =>
     replace l1 with (@nil Destructor); [ replace l2 with (@nil Destructor) |];
@@ -8724,14 +8724,14 @@ cbn. clear - GLd RefuncDt. case_eq (eq_TypeName tn tn0); intros.
   end.
   2:{ case_eq (filter (fun x : ScopedName * list TypeName * TypeName => eq_TypeName (fst (unscope (fst (fst x)))) tn0)
         (skeleton_dtors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 RefuncDt.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 DtorizeDt.
     rewrite filter_In in H0. destruct H0. pose proof (skeleton_cdts_dtors_in_cdts (program_skeleton p)).
     unfold cdts_dtors_in_cdts in H1. rewrite Forall_forall in H1. apply H1 in H.
     rewrite eq_TypeName_eq in H0. subst. pose proof (skeleton_dts_cdts_disjoint (program_skeleton p)).
     unfold dts_cdts_disjoint in H0. unfold not in H0...
   }
   2:{ case_eq (filter (cfunsigs_filterfun_l tn0) (skeleton_dtors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 RefuncDt.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 DtorizeDt.
     rewrite filter_In in H0. destruct H0. pose proof (skeleton_cdts_dtors_in_cdts (program_skeleton p)).
     unfold cdts_dtors_in_cdts in H1. rewrite Forall_forall in H1. apply H1 in H.
     unfold cfunsigs_filterfun_l in H0. destruct p0. destruct p0. destruct s; try discriminate.
@@ -8739,7 +8739,7 @@ cbn. clear - GLd RefuncDt. case_eq (eq_TypeName tn tn0); intros.
     unfold dts_cdts_disjoint in H0. unfold not in H0...
   }
   2:{ case_eq (filter (cfunsigs_filterfun_g tn0) (skeleton_dtors (program_skeleton p))); intros...
-    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 RefuncDt.
+    exfalso. pose proof (in_eq p0 l). rewrite <- H in H0. clear - H0 DtorizeDt.
     rewrite filter_In in H0. destruct H0. pose proof (skeleton_cdts_dtors_in_cdts (program_skeleton p)).
     unfold cdts_dtors_in_cdts in H1. rewrite Forall_forall in H1. apply H1 in H.
     unfold cfunsigs_filterfun_g in H0. destruct p0. destruct p0. destruct s; try discriminate.
@@ -8802,44 +8802,44 @@ Qed.
 
 (* Final results *)
 
-Theorem derefunc_preserves_prog :
+Theorem ctorize_dtorize_preserves_prog :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
-  (* Necessary in case of empty codatatype to make sure no datatypes are defunc.ed. *)
-  (DefuncCdt : In tn (skeleton_cdts (program_skeleton p)))
+  (* Necessary in case of empty codatatype to make sure no datatypes are ctorize.ed. *)
+  (CtorizeCdt : In tn (skeleton_cdts (program_skeleton p)))
   (* In other words, the equality of programs only holds up to permutation of fundefs *)
   (InFront : gfun_bods_g_for_type_in_front p tn /\ gfun_bods_l_for_type_in_front p tn)
   (InFrontSigs : gfun_sigs_g_for_type_in_front (program_skeleton p) tn
     /\ gfun_sigs_l_for_type_in_front (program_skeleton p) tn
     /\ cdt_for_type_in_front (program_skeleton p) tn
     /\ dtors_for_type_in_front (program_skeleton p) tn),
-  pr  = defunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = refunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  pr  = constructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = destructorize_program pr tn P1' P2' P3' P4' P5' ->
   p = pr2.
 Proof with eauto.
-intros. eapply derefunc_preserves_prog_aux... apply global_before_local_ctors_defunc...
+intros. eapply ctorize_dtorize_preserves_prog_aux... apply global_before_local_ctors_ctorize...
 Qed.
 
-Theorem redefunc_preserves_prog :
+Theorem rectorize_preserves_prog :
 forall p tn P1 P2 P3 P4 P5 pr P1' P2' P3' P4' P5' pr2
   (GLd : global_before_local_dtors (skeleton_dtors (program_skeleton p)))
   (GLc : global_before_local_ctors (skeleton_ctors (program_skeleton p)))
-  (* Necessary in case of empty datatype to make sure no codatatypes are defunc.ed. *)
-  (RefuncDt : In tn (skeleton_dts (program_skeleton p)))
+  (* Necessary in case of empty datatype to make sure no codatatypes are ctorize.ed. *)
+  (DtorizeDt : In tn (skeleton_dts (program_skeleton p)))
   (* In other words, the equality of programs only holds up to permutation of fundefs *)
   (InFront : cfun_bods_g_for_type_in_front p tn /\ cfun_bods_l_for_type_in_front p tn)
   (InFrontSigs : cfun_sigs_g_for_type_in_front (program_skeleton p) tn
     /\ cfun_sigs_l_for_type_in_front (program_skeleton p) tn
     /\ dt_for_type_in_front (program_skeleton p) tn
     /\ ctors_for_type_in_front (program_skeleton p) tn),
-  pr  = refunctionalize_program p  tn P1  P2  P3  P4  P5  ->
-  pr2 = defunctionalize_program pr tn P1' P2' P3' P4' P5' ->
+  pr  = destructorize_program p  tn P1  P2  P3  P4  P5  ->
+  pr2 = constructorize_program pr tn P1' P2' P3' P4' P5' ->
   p = pr2.
 Proof with eauto.
-intros. eapply redefunc_preserves_prog_aux... apply global_before_local_dtors_refunc...
+intros. eapply rectorize_preserves_prog_aux... apply global_before_local_dtors_dtorize...
 Qed.
 
-Print Assumptions derefunc_preserves_prog.
-Print Assumptions redefunc_preserves_prog.
+Print Assumptions ctorize_dtorize_preserves_prog.
+Print Assumptions rectorize_preserves_prog.
 

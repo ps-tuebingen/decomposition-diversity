@@ -5,8 +5,8 @@ Require Import Coq.omega.Omega.
 Import ListNotations.
 (* Project related imports *)
 Require Import LiftComatch.
-Require Import DefuncI.
-Require Import DefuncII.
+Require Import CtorizeI.
+Require Import CtorizeII.
 Require Import BodyTypeDefs.
 Require Import ProgramDef.
 Require Import Typechecker.
@@ -22,7 +22,7 @@ Require Import SwitchIndices.
 Require Import UtilsNamesUnique.
 
 (**************************************************************************************************)
-(** * Defunctionalization Part III:                                                               *)
+(** * Constructorization Part III:                                                               *)
 (**                                                                                               *)
 (** Puts together the new program skeleton and the new function bodies.                           *)
 (**************************************************************************************************)
@@ -195,10 +195,10 @@ Qed.
 
 
 Definition new_fun_bods (p : program) (tn : TypeName) : fun_bods :=
-  map (fun x => (fst x, defunctionalize_expr tn (snd x))) (program_fun_bods p).
+  map (fun x => (fst x, constructorize_expr tn (snd x))) (program_fun_bods p).
 
 Lemma new_has_all_funbods : forall p tn,
-  has_all_fun_bods (skeleton_fun_sigs (defunctionalize_to_skeleton p tn)) (new_fun_bods p tn).
+  has_all_fun_bods (skeleton_fun_sigs (constructorize_to_skeleton p tn)) (new_fun_bods p tn).
 Proof with eauto.
 intros. unfold has_all_fun_bods. unfold new_fun_bods. rewrite map_map.
 pose proof (program_has_all_fun_bods p) as H...
@@ -206,7 +206,7 @@ Qed.
 
 Lemma new_funbods_typecheck : forall p tn,
   Forall (no_comatches tn) (map snd (program_fun_bods p)) ->
-  fun_bods_typecheck (defunctionalize_to_skeleton p tn) (new_fun_bods p tn).
+  fun_bods_typecheck (constructorize_to_skeleton p tn) (new_fun_bods p tn).
 Proof with auto.
 intros. unfold fun_bods_typecheck.
 pose proof (program_fun_bods_typecheck p).
@@ -215,7 +215,7 @@ rewrite Forall_forall in *. intros.
 unfold new_fun_bods in H1. rewrite in_map_iff in H1. do 2 (destruct H1).
 pose proof (H0 _ H2). do 4 (destruct H3). exists x1. exists x2. exists x3. split.
 - inversion H1; subst. simpl in *. rewrite <- H3. unfold lookup_fun_sig...
-- destruct x. simpl. inversion H1; subst. apply defunctionalize_expr_preserves_typing...
+- destruct x. simpl. inversion H1; subst. apply constructorize_expr_preserves_typing...
   unfold no_comatches in H. intros. apply H with (x:=snd x0)... apply in_map...
 Qed.
 
@@ -236,7 +236,7 @@ Definition cfunbods_filterfun_g (q : QName) (x : QName * (ScopedName * expr)) :=
   end.
 
 Definition switch_indices_aux (p : skeleton )(sn : ScopedName) (n : nat) (tn : TypeName) (e : expr) :=
-  defunctionalize_expr tn (proj1_sig (switch_indices e p sn n)).
+  constructorize_expr tn (proj1_sig (switch_indices e p sn n)).
 
 Definition globalize_aux {B} := map (fun x : QName * B => (global (fst x), snd x)).
 Definition localize_aux {B} := map (fun x : QName * B => (local (fst x), snd x)).
@@ -258,11 +258,11 @@ Definition new_cfun_bods_g (p : program) (tn : TypeName) : cfun_bods :=
                        (flat_map (fun x => (map (fun y => (fst x, y)) (snd x)))
                                  (program_gfun_bods_l p)))))))
         (filter (cfunsigs_filterfun_g tn) (skeleton_dtors (program_skeleton p)))) ++
-   (map (fun x => (fst x, map (fun y => (fst y, defunctionalize_expr tn (snd y))) (snd x)))
+   (map (fun x => (fst x, map (fun y => (fst y, constructorize_expr tn (snd y))) (snd x)))
         (program_cfun_bods_g p)).
 
 Definition new_has_all_cfunbods_g (p : program) (tn : TypeName) :
-  has_all_cfun_bods (skeleton_cfun_sigs_g (defunctionalize_to_skeleton p tn))
+  has_all_cfun_bods (skeleton_cfun_sigs_g (constructorize_to_skeleton p tn))
     (new_cfun_bods_g p tn).
 Proof with eauto.
 intros. unfold has_all_cfun_bods. unfold new_cfun_bods_g. rewrite map_app.
@@ -297,11 +297,11 @@ Definition new_cfun_bods_l (p : program) (tn : TypeName) : cfun_bods :=
                        (flat_map (fun x => (map (fun y => (fst x, y)) (snd x)))
                                  (program_gfun_bods_l p)))))))
         (filter (cfunsigs_filterfun_l tn) (skeleton_dtors (program_skeleton p)))) ++
-   (map (fun x => (fst x, map (fun y => (fst y, defunctionalize_expr tn (snd y))) (snd x)))
+   (map (fun x => (fst x, map (fun y => (fst y, constructorize_expr tn (snd y))) (snd x)))
         (program_cfun_bods_l p)).
 
 Definition new_has_all_cfunbods_l (p : program) (tn : TypeName) :
-  has_all_cfun_bods (skeleton_cfun_sigs_l (defunctionalize_to_skeleton p tn))
+  has_all_cfun_bods (skeleton_cfun_sigs_l (constructorize_to_skeleton p tn))
     (new_cfun_bods_l p tn).
 Proof with eauto.
 intros. unfold has_all_cfun_bods. unfold new_cfun_bods_l. rewrite map_app.
@@ -1487,7 +1487,7 @@ Lemma new_cfunbods_g_typecheck_aux:
                   length l = length l' /\
                   length l' = length l'' /\
                   l ++ ctxts0 = ctxts /\ l' ++ es0 = es /\ l'' ++ ts0 = ts) ->
-              defunctionalize_to_skeleton p tn /// ctxts0 |||- es0 ::: ts0) ->
+              constructorize_to_skeleton p tn /// ctxts0 |||- es0 ::: ts0) ->
           forall (ts0 : list TypeName) (ctxts0 l : list (list TypeName))
                  (l' : list expr) (l'' : list TypeName),
             length l = length l' ->
@@ -1515,7 +1515,7 @@ Lemma new_cfunbods_g_typecheck_aux:
               ctxts0 = l0 :: l1 ->
               forall (t : TypeName) (l2 : list TypeName),
                 ts0 = t :: l2 ->
-                defunctionalize_to_skeleton p tn / l0 |- a : t.
+                constructorize_to_skeleton p tn / l0 |- a : t.
 Proof with eauto.
   intros p tn x0 NoComatch_g NoComatch_l H6 es ctxts Heseq Hctxtseq Len1 ts Htseq Len2 H a es0 IHes0 ts0 ctxts0
     l l' l'' Len'1 Len'2 lEq l'Eq l''Eq l0 l1 H0 t l2 H1.
@@ -1574,11 +1574,11 @@ Proof with eauto.
                   }
                   rewrite aEq. rewrite map_nth.
                   unfold switch_indices_aux.
-                  match goal with [|- (_ / _ |- (defunctionalize_expr tn (proj1_sig ?s)) : _)] =>
+                  match goal with [|- (_ / _ |- (constructorize_expr tn (proj1_sig ?s)) : _)] =>
                     set (switch' := s)
                   end.
                   destruct switch' as [switch Switch] eqn:switchEq. simpl.
-                  apply defunctionalize_expr_preserves_typing.
+                  apply constructorize_expr_preserves_typing.
                   +++ clear - switchEq.
                       replace switch with (proj1_sig switch').
                       2: { rewrite switchEq... }
@@ -2785,7 +2785,7 @@ Corollary new_cfunbods_g_typecheck: forall p tn,
   Forall (no_comatches tn) (map snd (flat_map snd (program_cfun_bods_g p))) ->
   Forall (no_comatches tn) (map snd (flat_map snd (program_gfun_bods_g p))) ->
   Forall (no_comatches tn) (map snd (flat_map snd (program_gfun_bods_l p))) ->
-  cfun_bods_g_typecheck (defunctionalize_to_skeleton p tn) (new_cfun_bods_g p tn).
+  cfun_bods_g_typecheck (constructorize_to_skeleton p tn) (new_cfun_bods_g p tn).
 Proof with eauto.
 intros. unfold cfun_bods_g_typecheck.
 pose proof (program_cfun_bods_typecheck_g p).
@@ -2820,14 +2820,14 @@ apply in_app_or in H5. rewrite or_comm in H5. destruct H5.
     unfold dts_cdts_disjoint in Disj. unfold not in Disj. eapply Disj.
     split...
   + set (mtch:=E_Match (fst x0) (E_Var 0) (index_list 1 x1) (snd x0) x2).
-    assert (mtch=mtch)... apply (f_equal (defunctionalize_expr tn)) in H8.
+    assert (mtch=mtch)... apply (f_equal (constructorize_expr tn)) in H8.
     unfold mtch in H8 at 1. cbn -[mtch] in H8.
-    replace (map (fun x : expr * TypeName => (defunctionalize_expr tn (fst x), snd x))
+    replace (map (fun x : expr * TypeName => (constructorize_expr tn (fst x), snd x))
       (index_list 1 x1))
     with (index_list 1 x1) in H8.
     2:{ clear. generalize 1. induction x1; intros... simpl. f_equal. apply IHx1. }
     rewrite H8. unfold mtch.
-    apply defunctionalize_expr_preserves_typing...
+    apply constructorize_expr_preserves_typing...
     intros. inversion H9; subst; try discriminate. inversion H11; subst.
     * inversion H10; subst; try discriminate. inversion H13.
     * clear - H10 H14. generalize H14. clear H14. generalize dependent 1.
@@ -4075,7 +4075,7 @@ Lemma new_cfunbods_l_typecheck_aux:
                   length l = length l' /\
                   length l' = length l'' /\
                   l ++ ctxts0 = ctxts /\ l' ++ es0 = es /\ l'' ++ ts0 = ts) ->
-              defunctionalize_to_skeleton p tn /// ctxts0 |||- es0 ::: ts0) ->
+              constructorize_to_skeleton p tn /// ctxts0 |||- es0 ::: ts0) ->
           forall (ts0 : list TypeName) (ctxts0 l : list (list TypeName))
                  (l' : list expr) (l'' : list TypeName),
             length l = length l' ->
@@ -4103,7 +4103,7 @@ Lemma new_cfunbods_l_typecheck_aux:
               ctxts0 = l0 :: l1 ->
               forall (t : TypeName) (l2 : list TypeName),
                 ts0 = t :: l2 ->
-                defunctionalize_to_skeleton p tn / l0 |- a : t.
+                constructorize_to_skeleton p tn / l0 |- a : t.
 Proof with eauto.
   intros p tn x0 NoComatch_g NoComatch_l H6 es ctxts Heseq Hctxtseq Len1 ts Htseq Len2 H a es0 IHes0 ts0 ctxts0
     l l' l'' Len'1 Len'2 lEq l'Eq l''Eq l0 l1 H0 t l2 H1.
@@ -4162,11 +4162,11 @@ Proof with eauto.
                   }
                   rewrite aEq. rewrite map_nth.
                   unfold switch_indices_aux.
-                  match goal with [|- (_ / _ |- (defunctionalize_expr tn (proj1_sig ?s)) : _)] =>
+                  match goal with [|- (_ / _ |- (constructorize_expr tn (proj1_sig ?s)) : _)] =>
                     set (switch' := s)
                   end.
                   destruct switch' as [switch Switch] eqn:switchEq. simpl.
-                  apply defunctionalize_expr_preserves_typing.
+                  apply constructorize_expr_preserves_typing.
                   +++ clear - switchEq.
                       replace switch with (proj1_sig switch').
                       2: { rewrite switchEq... }
@@ -5373,7 +5373,7 @@ Corollary new_cfunbods_l_typecheck: forall p tn,
   Forall (no_comatches tn) (map snd (flat_map snd (program_cfun_bods_l p))) ->
   Forall (no_comatches tn) (map snd (flat_map snd (program_gfun_bods_l p))) ->
   Forall (no_comatches tn) (map snd (flat_map snd (program_gfun_bods_g p))) ->
-  cfun_bods_l_typecheck (defunctionalize_to_skeleton p tn) (new_cfun_bods_l p tn).
+  cfun_bods_l_typecheck (constructorize_to_skeleton p tn) (new_cfun_bods_l p tn).
 Proof with eauto.
 intros. unfold cfun_bods_l_typecheck.
 pose proof (program_cfun_bods_typecheck_l p).
@@ -5408,14 +5408,14 @@ apply in_app_or in H5. rewrite or_comm in H5. destruct H5.
     unfold dts_cdts_disjoint in Disj. unfold not in Disj. eapply Disj.
     split...
   + set (mtch:=E_Match (fst x0) (E_Var 0) (index_list 1 x1) (snd x0) x2).
-    assert (mtch=mtch)... apply (f_equal (defunctionalize_expr tn)) in H8.
+    assert (mtch=mtch)... apply (f_equal (constructorize_expr tn)) in H8.
     unfold mtch in H8 at 1. cbn -[mtch] in H8.
-    replace (map (fun x : expr * TypeName => (defunctionalize_expr tn (fst x), snd x))
+    replace (map (fun x : expr * TypeName => (constructorize_expr tn (fst x), snd x))
       (index_list 1 x1))
     with (index_list 1 x1) in H8.
     2:{ clear. generalize 1. induction x1; intros... simpl. f_equal. apply IHx1. }
     rewrite H8. unfold mtch.
-    apply defunctionalize_expr_preserves_typing...
+    apply constructorize_expr_preserves_typing...
     intros. inversion H9; subst; try discriminate. inversion H11; subst.
     * inversion H10; subst; try discriminate. inversion H13.
     * clear - H10 H14. generalize H14. clear H14. generalize dependent 1.
@@ -5608,11 +5608,11 @@ Qed.
 
 Definition new_gfun_bods_g (p : program) (tn : TypeName) : cfun_bods :=
   filter (fun x => match x with (n',_) => negb (eq_TypeName tn (fst n')) end)
-         (map (fun x => (fst x, map (fun y => (fst y, defunctionalize_expr tn (snd y))) (snd x)))
+         (map (fun x => (fst x, map (fun y => (fst y, constructorize_expr tn (snd y))) (snd x)))
               (program_gfun_bods_g p)).
 
 Definition new_has_all_gfunbods_g (p : program) (tn : TypeName) :
-  has_all_gfun_bods (skeleton_gfun_sigs_g (defunctionalize_to_skeleton p tn))
+  has_all_gfun_bods (skeleton_gfun_sigs_g (constructorize_to_skeleton p tn))
     (new_gfun_bods_g p tn).
 Proof with eauto.
 unfold has_all_gfun_bods. unfold new_gfun_bods_g. simpl. unfold new_gfunsigs_g.
@@ -5627,7 +5627,7 @@ Qed.
 
 Corollary new_gfunbods_g_typecheck: forall p tn,
   Forall (no_comatches tn) (map snd (flat_map snd (program_gfun_bods_g p))) ->
-  gfun_bods_g_typecheck (defunctionalize_to_skeleton p tn) (new_gfun_bods_g p tn).
+  gfun_bods_g_typecheck (constructorize_to_skeleton p tn) (new_gfun_bods_g p tn).
 Proof with eauto.
 intros. unfold gfun_bods_g_typecheck. rewrite Forall_forall. intros.
 unfold new_gfun_bods_g in H0.
@@ -5672,7 +5672,7 @@ apply H1 in H0. do 3 destruct H0. exists x0. exists x1. split.
     replace (map snd (index_list 0 x1)) with x1; try apply index_list_typechecks...
     clear. generalize 0. induction x1; intros... simpl. f_equal...
   + clear - H8 Flt. unfold lookup_dtors in *.
-    case_eq (filter (eq_TypeName (fst (fst x0'))) (skeleton_cdts (defunctionalize_to_skeleton p tn))); intros.
+    case_eq (filter (eq_TypeName (fst (fst x0'))) (skeleton_cdts (constructorize_to_skeleton p tn))); intros.
     * exfalso. case_eq (filter (eq_TypeName (fst (fst x0'))) (skeleton_cdts (program_skeleton p))); intros.
       -- rewrite H0 in *. discriminate.
       -- rewrite H0 in *. inversion H8; subst. cbn in H. unfold new_cdts in H.
@@ -5701,7 +5701,7 @@ apply H1 in H0. do 3 destruct H0. exists x0. exists x1. split.
     induction dtorlist; intros; pose proof H10 as H10'; apply listTypeDeriv'_lemma in H10;
       rewrite Nat.eqb_eq in H10; simpl in H10; destruct l0; try discriminate; try apply ListTypeDeriv'_Nil.
     inversion H10'; subst. simpl. apply ListTypeDeriv'_Cons...
-    * apply defunctionalize_expr_preserves_typing... intros.
+    * apply constructorize_expr_preserves_typing... intros.
       destruct H0'. destruct H1. clear - H H1 H2 H0.
       rewrite Forall_forall in H. unfold no_comatches in H.
       inversion H0; subst.
@@ -5716,11 +5716,11 @@ Qed.
 
 Definition new_gfun_bods_l (p : program) (tn : TypeName) : cfun_bods :=
   filter (fun x => match x with (n',_) => negb (eq_TypeName tn (fst n')) end)
-         (map (fun x => (fst x, map (fun y => (fst y, defunctionalize_expr tn (snd y))) (snd x)))
+         (map (fun x => (fst x, map (fun y => (fst y, constructorize_expr tn (snd y))) (snd x)))
               (program_gfun_bods_l p)).
 
 Definition new_has_all_gfunbods_l (p : program) (tn : TypeName) :
-  has_all_gfun_bods (skeleton_gfun_sigs_l (defunctionalize_to_skeleton p tn))
+  has_all_gfun_bods (skeleton_gfun_sigs_l (constructorize_to_skeleton p tn))
     (new_gfun_bods_l p tn).
 Proof with eauto.
 unfold has_all_gfun_bods. unfold new_gfun_bods_l. simpl. unfold new_gfunsigs_l.
@@ -5735,7 +5735,7 @@ Qed.
 
 Corollary new_gfunbods_l_typecheck: forall p tn,
   Forall (no_comatches tn) (map snd (flat_map snd (program_gfun_bods_l p))) ->
-  gfun_bods_l_typecheck (defunctionalize_to_skeleton p tn) (new_gfun_bods_l p tn).
+  gfun_bods_l_typecheck (constructorize_to_skeleton p tn) (new_gfun_bods_l p tn).
 Proof with eauto.
 intros. unfold gfun_bods_l_typecheck. rewrite Forall_forall. intros.
 unfold new_gfun_bods_l in H0.
@@ -5780,7 +5780,7 @@ apply H1 in H0. do 3 destruct H0. exists x0. exists x1. split.
     replace (map snd (index_list 0 x1)) with x1; try apply index_list_typechecks...
     clear. generalize 0. induction x1; intros... simpl. f_equal...
   + clear - H8 Flt. unfold lookup_dtors in *.
-    case_eq (filter (eq_TypeName (fst (fst x0'))) (skeleton_cdts (defunctionalize_to_skeleton p tn))); intros.
+    case_eq (filter (eq_TypeName (fst (fst x0'))) (skeleton_cdts (constructorize_to_skeleton p tn))); intros.
     * exfalso. case_eq (filter (eq_TypeName (fst (fst x0'))) (skeleton_cdts (program_skeleton p))); intros.
       -- rewrite H0 in *. discriminate.
       -- rewrite H0 in *. inversion H8; subst. cbn in H. unfold new_cdts in H.
@@ -5809,7 +5809,7 @@ apply H1 in H0. do 3 destruct H0. exists x0. exists x1. split.
     induction dtorlist; intros; pose proof H10 as H10'; apply listTypeDeriv'_lemma in H10;
       rewrite Nat.eqb_eq in H10; simpl in H10; destruct l0; try discriminate; try apply ListTypeDeriv'_Nil.
     inversion H10'; subst. simpl. apply ListTypeDeriv'_Cons...
-    * apply defunctionalize_expr_preserves_typing... intros.
+    * apply constructorize_expr_preserves_typing... intros.
       destruct H0'. destruct H1. clear - H H1 H2 H0.
       rewrite Forall_forall in H. unfold no_comatches in H.
       inversion H0; subst.
@@ -5822,8 +5822,8 @@ apply H1 in H0. do 3 destruct H0. exists x0. exists x1. split.
 Qed.
 
 
-Lemma defunctionalize_expr_no_effect_on_matches : forall tn e,
-  collect_match_names (defunctionalize_expr tn e) = collect_match_names e.
+Lemma constructorize_expr_no_effect_on_matches : forall tn e,
+  collect_match_names (constructorize_expr tn e) = collect_match_names e.
 Proof with eauto.
 intros. induction e using expr_strong_ind; simpl; eauto;
   try (try (rewrite IHe; f_equal);
@@ -5844,7 +5844,7 @@ Qed.
 Lemma switch_indices_aux_no_effect_on_matches : forall p sn n tn e,
   collect_match_names (switch_indices_aux p sn n tn e) = collect_match_names e.
 Proof with eauto.
-intros. unfold switch_indices_aux. rewrite defunctionalize_expr_no_effect_on_matches.
+intros. unfold switch_indices_aux. rewrite constructorize_expr_no_effect_on_matches.
 unfold switch_indices. destruct (lookup_gfun_sig_scoped p sn)... cbn.
 generalize 0.
 induction e using expr_strong_ind; intro n'; simpl in *;
@@ -5869,7 +5869,7 @@ Definition collect_tuple : Type :=
             (map snd f ++
              map snd (concat (map snd c)) ++
              map snd (concat (map snd g))))))
-  /\ (forall tn e, (fst x) (defunctionalize_expr tn e) = (fst x) e)
+  /\ (forall tn e, (fst x) (constructorize_expr tn e) = (fst x) e)
   /\ (forall p sn n tn e, (fst x) (switch_indices_aux p sn n tn e) = (fst x) e)
   }.
 
@@ -6322,7 +6322,7 @@ unfold unordered_eq. split.
          simpl in *. case_eq (negb (eq_TypeName tn (fst (fst a)))); intros.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H.
             simpl. rewrite IHg. clear IHg. rewrite map_map. simpl. erewrite map_ext with (f:=fun x : ScopedName * expr =>
-              length ((fst (proj1_sig ct)) (defunctionalize_expr tn (snd x)))).
+              length ((fst (proj1_sig ct)) (constructorize_expr tn (snd x)))).
             2:{ intros. rewrite (proj1 (proj2 (proj2 (proj2_sig ct)))). reflexivity. }
             reflexivity.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H...
@@ -6933,7 +6933,7 @@ unfold unordered_eq. split.
          simpl in *. case_eq (negb (eq_TypeName tn (fst (fst a)))); intros.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H.
             simpl. rewrite IHg. clear IHg. rewrite map_map. simpl. erewrite map_ext with (f:=fun x : ScopedName * expr =>
-              length ((fst (proj1_sig ct)) (defunctionalize_expr tn (snd x)))).
+              length ((fst (proj1_sig ct)) (constructorize_expr tn (snd x)))).
             2:{ intros. rewrite (proj1 (proj2 (proj2 (proj2_sig ct)))). reflexivity. }
             reflexivity.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H...
@@ -7520,7 +7520,7 @@ unfold unordered_eq. split.
          simpl in *. case_eq (negb (eq_TypeName tn (fst (fst a)))); intros.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H.
             simpl. rewrite IHg. clear IHg. rewrite map_map. simpl. erewrite map_ext with (f:=fun x : ScopedName * expr =>
-              length ((fst (proj1_sig ct)) (defunctionalize_expr tn (snd x)))).
+              length ((fst (proj1_sig ct)) (constructorize_expr tn (snd x)))).
             2:{ intros. rewrite (proj1 (proj2 (proj2 (proj2_sig ct)))). reflexivity. }
             reflexivity.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H...
@@ -8116,7 +8116,7 @@ unfold unordered_eq. split.
          simpl in *. case_eq (negb (eq_TypeName tn (fst (fst a)))); intros.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H.
             simpl. rewrite IHg. clear IHg. rewrite map_map. simpl. erewrite map_ext with (f:=fun x : ScopedName * expr =>
-              length ((fst (proj1_sig ct)) (defunctionalize_expr tn (snd x)))).
+              length ((fst (proj1_sig ct)) (constructorize_expr tn (snd x)))).
             2:{ intros. rewrite (proj1 (proj2 (proj2 (proj2_sig ct)))). reflexivity. }
             reflexivity.
          ++ unfold gfun_bod_named in *. unfold gfun_bod in *. unfold QName in *. rewrite H...
@@ -9540,11 +9540,11 @@ assert (
             (map snd f ++
              map snd (concat (map snd c)) ++
              map snd (concat (map snd g))))))
-  /\ (forall tn e, collect_match_names (defunctionalize_expr tn e) = collect_match_names e)
+  /\ (forall tn e, collect_match_names (constructorize_expr tn e) = collect_match_names e)
   /\ (forall p sn n tn e, collect_match_names (switch_indices_aux p sn n tn e) = collect_match_names e)).
 { repeat try split.
   - intros. apply program_match_names_unique.
-  - intros. apply defunctionalize_expr_no_effect_on_matches.
+  - intros. apply constructorize_expr_no_effect_on_matches.
   - intros. apply switch_indices_aux_no_effect_on_matches.
 }
 pose proof (new_match_names_unique' p tn (exist _ (collect_match_names, match_names_unique) H))...
@@ -9552,8 +9552,8 @@ Qed.
 
 
 
-Lemma defunctionalize_expr_no_effect_on_comatches : forall tn e,
-  collect_comatch_names (defunctionalize_expr tn e) = collect_comatch_names e.
+Lemma constructorize_expr_no_effect_on_comatches : forall tn e,
+  collect_comatch_names (constructorize_expr tn e) = collect_comatch_names e.
 Proof with eauto.
 intros. induction e using expr_strong_ind; simpl; eauto;
   try (try (rewrite IHe; f_equal);
@@ -9574,7 +9574,7 @@ Qed.
 Lemma switch_indices_aux_no_effect_on_comatches : forall p sn n tn e,
   collect_comatch_names (switch_indices_aux p sn n tn e) = collect_comatch_names e.
 Proof with eauto.
-intros. unfold switch_indices_aux. rewrite defunctionalize_expr_no_effect_on_comatches.
+intros. unfold switch_indices_aux. rewrite constructorize_expr_no_effect_on_comatches.
 unfold switch_indices. destruct (lookup_gfun_sig_scoped p sn)... cbn.
 generalize 0.
 induction e using expr_strong_ind; intro n'; simpl in *;
@@ -9602,11 +9602,11 @@ assert (
             (map snd f ++
              map snd (concat (map snd c)) ++
              map snd (concat (map snd g))))))
-  /\ (forall tn e, collect_comatch_names (defunctionalize_expr tn e) = collect_comatch_names e)
+  /\ (forall tn e, collect_comatch_names (constructorize_expr tn e) = collect_comatch_names e)
   /\ (forall p sn n tn e, collect_comatch_names (switch_indices_aux p sn n tn e) = collect_comatch_names e)).
 { repeat try split.
   - intros. apply program_comatch_names_unique.
-  - intros. apply defunctionalize_expr_no_effect_on_comatches.
+  - intros. apply constructorize_expr_no_effect_on_comatches.
   - intros. apply switch_indices_aux_no_effect_on_comatches.
 }
 pose proof (new_match_names_unique' p tn (exist _ (collect_comatch_names, comatch_names_unique) H))...
@@ -9617,7 +9617,7 @@ Qed.
 (** ** Patch together the new program from the new components and proofs                          *)
 (**************************************************************************************************)
 
-Definition defunctionalize_program (p : program) (tn : TypeName)
+Definition constructorize_program (p : program) (tn : TypeName)
   (NoCmFun : Forall (no_comatches tn) (map snd (program_fun_bods p)))
   (NoCmCfunG : Forall (no_comatches tn) (map snd (flat_map snd (program_cfun_bods_g p))))
   (NoCmCfunL : Forall (no_comatches tn) (map snd (flat_map snd (program_cfun_bods_l p))))
@@ -9626,7 +9626,7 @@ Definition defunctionalize_program (p : program) (tn : TypeName)
  : program :=
 {|
   (* Skeleton *)
-  program_skeleton := defunctionalize_to_skeleton p tn;
+  program_skeleton := constructorize_to_skeleton p tn;
   (* Ordinary functions *)
   program_fun_bods := new_fun_bods p tn;
   program_has_all_fun_bods := new_has_all_funbods p tn;

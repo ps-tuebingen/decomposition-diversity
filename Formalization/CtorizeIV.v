@@ -5,9 +5,9 @@ Require Import Coq.omega.Omega.
 Import ListNotations.
 (* Project related imports *)
 Require Import LiftComatch.
-Require Import DefuncI.
-Require Import DefuncII.
-Require Import DefuncIII.
+Require Import CtorizeI.
+Require Import CtorizeII.
+Require Import CtorizeIII.
 Require Import BodyTypeDefs.
 Require Import ProgramDef.
 Require Import Typechecker.
@@ -22,12 +22,12 @@ Require Import Subterm.
 Require Import SwitchIndices.
 
 (**************************************************************************************************)
-(** * Defunctionalization Part IV:                                                                *)
+(** * Constructorization Part IV:                                                                *)
 (**                                                                                               *)
-(** Chains comatch lifting and (core) defunctionalization                                         *)
+(** Chains comatch lifting and (core) constructorization                                         *)
 (**************************************************************************************************)
 
-(* Bridges the two definitions as used in LiftComatch and DefuncIII *)
+(* Bridges the two definitions as used in LiftComatch and CtorizeIII *)
 Lemma no_comatches_bridge : forall tn e,
   contains_no_comatches tn e -> no_comatches tn e.
 Proof with try discriminate; eauto.
@@ -228,7 +228,7 @@ Proof with eauto. intros. unfold lift_comatch_to_skeleton... Qed.
 (* Note this assumes that the input program contains no functions annotated as local.
    (If there are local consumer or generator functions, this just returns the original program.)
  *)
-Definition defunctionalize_program_with_lift (p : program) (tn : TypeName) :=
+Definition constructorize_program_with_lift (p : program) (tn : TypeName) :=
 match Nat.eq_dec (length (skeleton_gfun_sigs_l (program_skeleton p))) O with
 | left eq2 =>
 let Uniq := new_gfun_sigs_names_unique p tn eq2 in
@@ -241,7 +241,7 @@ let NoCmCFunG := cfuns_g_no_comatches p tn eq2 no_local_cfuns in
 let NoCmCFunL := cfuns_l_no_comatches p tn eq2 no_local_cfuns in
 let NoCmGFunG := gfuns_g_no_comatches p tn eq2 no_local_cfuns in
 let NoCmGFunL := gfuns_l_no_comatches p tn eq2 no_local_cfuns in
-defunctionalize_program lifted_prog tn NoCmFun NoCmCFunG NoCmCFunL NoCmGFunG NoCmGFunL
+constructorize_program lifted_prog tn NoCmFun NoCmCFunG NoCmCFunL NoCmGFunG NoCmGFunL
 | _ => p
 end
 | _ => p

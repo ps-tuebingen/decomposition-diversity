@@ -1,5 +1,5 @@
 (**************************************************************************************************)
-(* Total De/Refunctionalization for Local (Co)pattern Matching.                                   *)
+(* Total Constructor/Destructorization for Local (Co)pattern Matching.                                   *)
 (*                                                                                                *)
 (* File: Extraction.v                                                                             *)
 (*                                                                                                *)
@@ -19,8 +19,8 @@ Require Import LiftComatch.
 Require Import InlineMatch.
 Require Import LiftMatch.
 Require Import InlineComatch.
-Require Import RefuncIII.
-Require Import DefuncIII.
+Require Import DtorizeIII.
+Require Import CtorizeIII.
 
 
 Extraction Language Haskell.
@@ -111,8 +111,8 @@ Separate Extraction
          (* InlineComatch *)
          InlineComatch.inline_gfuns_to_program
          InlineComatch.contains_no_local_gfun_call_b
-         (* RefuncIII *)
-         RefuncIII.refunctionalize_program
-         (* DefuncIII *)
-         DefuncIII.defunctionalize_program.
+         (* DtorizeIII *)
+         DtorizeIII.destructorize_program
+         (* CtorizeIII *)
+         CtorizeIII.constructorize_program.
 

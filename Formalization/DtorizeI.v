@@ -21,7 +21,7 @@ Require Import Typechecker.
 Require Import Unique.
 
 (**************************************************************************************************)
-(** * Refunctionalization Part I:                                                                 *)
+(** * Destructorization Part I:                                                                 *)
 (**                                                                                               *)
 (** In the first part of the algorithm we compute a new program skeleton.                         *)
 (**************************************************************************************************)
@@ -528,10 +528,10 @@ apply disjoint_app_unique.
 Qed.
 
 (**************************************************************************************************)
-(** * Refunctionalize to Skeleton.                                                                *)
+(** * Destructorize to Skeleton.                                                                *)
 (**************************************************************************************************)
 
-Definition refunctionalize_to_skeleton (p : program) (n : TypeName) : skeleton :=
+Definition destructorize_to_skeleton (p : program) (n : TypeName) : skeleton :=
   let newCoDatatype := (computeNewCoDatatype p n) in
   {|
     skeleton_dts := new_dts p n;

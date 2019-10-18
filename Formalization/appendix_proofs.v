@@ -196,10 +196,10 @@ in bs by their corresponding values.
 
     ------------------------------------------------------------------------------------------------
 
-    Lemma R2.1: Given an expression expr, the result of (refunctionalize expr) will be a value iff
+    Lemma R2.1: Given an expression expr, the result of (destructorize expr) will be a value iff
         expr is a value.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We will perform an induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -208,23 +208,23 @@ in bs by their corresponding values.
         for some expression e of type T, a cfun d for type T and a list of expressions as,
         then this is a simple congruence case, which can immediately be resolved by induction.
         If it is of the first form C(as), then it is a value iff all expressions in as are values.
-        The result of refunctionalization of C(as) will be
+        The result of destructorization of C(as) will be
         C'(as'),
-        where C' is the new gfun corresponding to C and as' are the recursively refunctionalized
+        where C' is the new gfun corresponding to C and as' are the recursively destructorized
         arguments.
         This is a value iff all expressions in as' are values, which by induction is true iff all
         expressions in as are values, which is true iff C(as) is a value.
-        Similarly, in the second case, e.d(as) is not a value and its refunctionalization is
+        Similarly, in the second case, e.d(as) is not a value and its destructorization is
         e'.d'(as')
-        with e' the refunctionalization of e, d' the new destructor corresponding to d and as' the
-        recursively refunctionalized list as.
+        with e' the destructorization of e, d' the new destructor corresponding to d and as' the
+        recursively destructorized list as.
         This is also not a value, thus concluding the proof.
     Qed.
 
-    Lemma D2.1: Given an expression expr, the result of (defunctionalize expr) will be a value iff
+    Lemma D2.1: Given an expression expr, the result of (constructorize expr) will be a value iff
         expr is a value.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We will perform an induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -233,23 +233,23 @@ in bs by their corresponding values.
         for some expression e of type T, a destructor d for type T and a list of expressions as,
         then this is a simple congruence case, which can immediately be resolved by induction.
         If it is of the first form C(as), then it is a value iff all expressions in as are values.
-        The result of defunctionalization of C(as) will be
+        The result of constructorization of C(as) will be
         C'(as'),
         where C' is the new constructor corresponding to C and as' are the recursively
-        defunctionalized arguments.
+        constructorized arguments.
         This is a value iff all expressions in as' are values, which by induction is true iff all
         expressions in as are values, which is true iff C(as) is a value.
-        Similarly, in the second case, e.d(as) is not a value and its defunctionalization is
+        Similarly, in the second case, e.d(as) is not a value and its constructorization is
         e'.d'(as')
-        with e' the defunctionalization of e, d' the new cfun corresponding to d and as' the
-        recursively defunctionalized list as.
+        with e' the constructorization of e, d' the new cfun corresponding to d and as' the
+        recursively constructorized list as.
         This is also not a value, thus concluding the proof.
     Qed.
 
-    Lemma R2.2: Given an expression expr, the result of (refunctionalize expr) will be a redex iff
+    Lemma R2.2: Given an expression expr, the result of (destructorize expr) will be a redex iff
         expr is a redex.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We start by induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -259,25 +259,25 @@ in bs by their corresponding values.
         then this is a simple congruence case, which can immediately be resolved by induction and
         Lemma R2.1.
         If it is of the first form C(as), then it is not an outermost redex.
-        The result of refunctionalization of C(as) will be
+        The result of destructorization of C(as) will be
         C'(as'),
-        where C' is the new gfun corresponding to C and as' are the recursively refunctionalized
+        where C' is the new gfun corresponding to C and as' are the recursively destructorized
         arguments.
         This also can never be a redex.
         Similarly, in the second case, e.d(as) is a redex iff e and all expressions in as are values
-        and its refunctionalization is
+        and its destructorization is
         e'.d'(as')
-        with e' the refunctionalization of e, d' the new destructor corresponding to d and as' the
-        recursively refunctionalized list as.
+        with e' the destructorization of e, d' the new destructor corresponding to d and as' the
+        recursively destructorized list as.
         This is a redex iff e' and all expressions in as' are values, which by Lemma R2.1 is the
         case iff e and all expressions in as are values, which is once again is true iff the
         e.d(as) is a redex.
     Qed.
 
-    Lemma D2.2: Given an expression expr, the result of (defunctionalize expr) will be a redex iff
+    Lemma D2.2: Given an expression expr, the result of (constructorize expr) will be a redex iff
         expr is a redex.
     Proof.
-        First, fix T to be the type to be defunctionalized.
+        First, fix T to be the type to be constructorized.
         We start by induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -287,28 +287,28 @@ in bs by their corresponding values.
         then this is a simple congruence case, which can immediately be resolved by induction and
         Lemma D2.1.
         If it is of the first form C(as), then it is not an outermost redex.
-        The result of defunctionalization of C(as) will be
+        The result of constructorization of C(as) will be
         C'(as'),
         where C' is the new constructor corresponding to C and as' are the recursively
-        defunctionalized arguments.
+        constructorized arguments.
         This also can never be a redex.
         Similarly, in the second case, e.d(as) is a redex iff e and all expressions in as are values
-        and its defunctionalization is
+        and its constructorization is
         e'.d'(as')
-        with e' the defunctionalization of e, d' the new cfun corresponding to d and as' the
-        recursively defunctionalized list as.
+        with e' the constructorization of e, d' the new cfun corresponding to d and as' the
+        recursively constructorized list as.
         This is a redex iff e' and all expressions in as' are values, which by Lemma D2.1 is the
         case iff e and all expressions in as are values, which is once again is true iff the
         e.d(as) is a redex.
     Qed.
 
     Lemma R2.3 Given an expression expr,
-        one_step_eval (refunctionalize expr) = refunctionalize (one_step_eval expr),
-        i.e. refunctionalize preserves reduction.
+        one_step_eval (destructorize expr) = destructorize (one_step_eval expr),
+        i.e. destructorize preserves reduction.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We will perform an induction on the structure of expr.
-        Since, by Lemmas R2.1 and R2.2, refunctionalization preserves values and redexes, we only
+        Since, by Lemmas R2.1 and R2.2, destructorization preserves values and redexes, we only
         need to consider the case of redexes which involve a cfun call on a constructor on T where
         all arguments are already values, since all other cases are once again congruences that can
         immediately be handled by induction.
@@ -324,9 +324,9 @@ in bs by their corresponding values.
         for some expression e.
         Hence, reducing would result in
         e[vs -> as][ws -> bs].
-        After refunctionalization, we get
+        After destructorization, we get
         C'(as').d'(bs'),
-        with as' and bs' being the recursively refunctionalized expression list as and bs,
+        with as' and bs' being the recursively destructorized expression list as and bs,
         respectively, and C' and d' being the new corresponding gfun and destructor names,
         respectively.
         Additionally, we replace the cfun d by a new gfun
@@ -335,20 +335,20 @@ in bs by their corresponding values.
             d(ws) => e'
             ...
         with variable lists vs and ws as well as the expression e', which is the result of
-        refunctionalizing e.
+        destructorizing e.
         Reducing the result would yield
         e'[vs -> as'][ws -> bs'],
-        which, by the substition lemma refunc_substitution, is the result of refunctionalizing
+        which, by the substition lemma dtorize_substitution, is the result of destructorizing
         e[vs -> as][ws -> bs].
     Qed.
 
     Lemma D2.3 Given an expression expr,
-        one_step_eval (defunctionalize expr) = defunctionalize (one_step_eval expr),
-        i.e. defunctionalize preserves reduction.
+        one_step_eval (constructorize expr) = constructorize (one_step_eval expr),
+        i.e. constructorize preserves reduction.
     Proof.
-        First, fix T to be the type to be defunctionalized.
+        First, fix T to be the type to be constructorized.
         We will perform an induction on the structure of expr.
-        Since, by Lemmas D2.1 and D2.2, defunctionalization preserves values and redexes, we only
+        Since, by Lemmas D2.1 and D2.2, constructorization preserves values and redexes, we only
         need to consider the case of redexes which involve a destructor call on a gfun on T where
         all arguments are already values, since all other cases are once again congruences that can
         immediately be handled by induction.
@@ -364,9 +364,9 @@ in bs by their corresponding values.
         for some expression e.
         Hence, reducing would result in
         e[vs -> as][ws -> bs].
-        After defunctionalization, we get
+        After constructorization, we get
         C'(as').d'(bs'),
-        with as' and bs' being the recursively defunctionalized expression list as and bs,
+        with as' and bs' being the recursively constructorized expression list as and bs,
         respectively, and C' and d' being the new corresponding constructor and cfun names,
         respectively.
         Additionally, we replace the gfun d by a new cfun
@@ -375,10 +375,10 @@ in bs by their corresponding values.
             C(vs) => e'
             ...
         with variable lists vs and ws as well as the expression e', which is the result of
-        defunctionalizing e.
+        constructorizing e.
         Reducing the result would yield
         e'[vs -> as'][ws -> bs'],
-        which, by the substition lemma defunc_substitution, is the result of defunctionalizing
+        which, by the substition lemma ctorize_substitution, is the result of constructorizing
         e[vs -> as][ws -> bs].
     Qed.
 

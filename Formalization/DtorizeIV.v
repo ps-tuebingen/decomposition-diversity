@@ -5,9 +5,9 @@ Require Import Coq.omega.Omega.
 Import ListNotations.
 (* Project related imports *)
 Require Import LiftMatch.
-Require Import RefuncI.
-Require Import RefuncII.
-Require Import RefuncIII.
+Require Import DtorizeI.
+Require Import DtorizeII.
+Require Import DtorizeIII.
 Require Import BodyTypeDefs.
 Require Import ProgramDef.
 Require Import Typechecker.
@@ -22,12 +22,12 @@ Require Import Subterm.
 Require Import SwitchIndices.
 
 (**************************************************************************************************)
-(** * Defunctionalization Part IV:                                                                *)
+(** * Constructorization Part IV:                                                                *)
 (**                                                                                               *)
-(** Chains match lifting and (core) refunctionalization                                           *)
+(** Chains match lifting and (core) destructorization                                           *)
 (**************************************************************************************************)
 
-(* Bridges the two definitions as used in LiftMatch and RefuncIV *)
+(* Bridges the two definitions as used in LiftMatch and DtorizeIV *)
 Lemma no_matches_bridge : forall tn e,
   contains_no_matches tn e -> no_matches tn e.
 Proof with try discriminate; eauto.
@@ -230,7 +230,7 @@ Proof with eauto. intros. unfold lift_match_to_skeleton... Qed.
 (* Note this assumes that the input program contains no functions annotated as local.
    (If there are local consumer or generator functions, this just returns the original program.)
  *)
-Definition refunctionalize_program_with_lift (p : program) (tn : TypeName) :=
+Definition destructorize_program_with_lift (p : program) (tn : TypeName) :=
 match Nat.eq_dec (length (skeleton_cfun_sigs_l (program_skeleton p))) O with
 | left eq2 =>
 let Uniq := new_cfun_sigs_names_unique p tn eq2 in
@@ -243,7 +243,7 @@ let NoMCFunG := cfuns_g_no_matches p tn eq2 eq in
 let NoMCFunL := cfuns_l_no_matches p tn eq2 eq in
 let NoMGFunG := gfuns_g_no_matches p tn eq2 eq in
 let NoMGFunL := gfuns_l_no_matches p tn eq2 eq in
-refunctionalize_program lifted_prog tn NoMFun NoMCFunG NoMCFunL NoMGFunG NoMGFunL
+destructorize_program lifted_prog tn NoMFun NoMCFunG NoMCFunL NoMGFunG NoMGFunL
 | _ => p
 end
 | _ => p

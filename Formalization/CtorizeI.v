@@ -21,7 +21,7 @@ Require Import Typechecker.
 Require Import Unique.
 
 (**************************************************************************************************)
-(** * Defunctionalization Part I:                                                                 *)
+(** * Constructorization Part I:                                                                 *)
 (**                                                                                               *)
 (** In the first part of the algorithm we compute a new program skeleton.                         *)
 (**************************************************************************************************)
@@ -521,10 +521,10 @@ rewrite filter_map with
 Qed.
 
 (**************************************************************************************************)
-(** * Defunctionalize to Skeleton.                                                                *)
+(** * Constructorize to Skeleton.                                                                *)
 (**************************************************************************************************)
 
-Definition defunctionalize_to_skeleton (p : program) (n : TypeName) : skeleton :=
+Definition constructorize_to_skeleton (p : program) (n : TypeName) : skeleton :=
   let newDatatype := (computeNewDatatype p n) in
   {|
     skeleton_dts := n :: skeleton_dts (program_skeleton p);

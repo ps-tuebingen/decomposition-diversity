@@ -5,8 +5,8 @@ Require Import Coq.omega.Omega.
 Import ListNotations.
 (* Project related imports *)
 Require Import LiftComatch.
-Require Import DefuncI.
-Require Import DefuncII.
+Require Import CtorizeI.
+Require Import CtorizeII.
 Require Import BodyTypeDefs.
 Require Import ProgramDef.
 Require Import Typechecker.

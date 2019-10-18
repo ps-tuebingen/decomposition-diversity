@@ -1,5 +1,5 @@
 (**************************************************************************************************)
-(* Total De/Refunctionalization for Local (Co)pattern Matching.                                   *)
+(* Total Constructor/Destructorization for Local (Co)pattern Matching.                                   *)
 (*                                                                                                *)
 (* File: OptionMonad.v                                                                            *)
 (*                                                                                                *)

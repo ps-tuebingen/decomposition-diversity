@@ -2,18 +2,18 @@
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Require Import DefuncII.
-Require Import RefuncII.
+Require Import CtorizeII.
+Require Import DtorizeII.
 Require Import AST.
 Require Import Names.
 Require Import Eval.
 Require Import GenericLemmas.
 Require Import GenericTactics.
 
-Lemma defunc_substitution: forall (e e' : expr) (tn : TypeName) (n : nat),
-    defunctionalize_expr tn (substitute' n e' e) =
-    substitute' n (defunctionalize_expr tn e')
-                (defunctionalize_expr tn e).
+Lemma ctorize_substitution: forall (e e' : expr) (tn : TypeName) (n : nat),
+    constructorize_expr tn (substitute' n e' e) =
+    substitute' n (constructorize_expr tn e')
+                (constructorize_expr tn e).
 Proof.
   intros.
   gen_dep n.
@@ -28,10 +28,10 @@ Proof.
   match_destruct_tac; simpl; auto.
 Qed.
 
-Lemma refunc_substitution: forall (e e' : expr) (tn : TypeName) (n : nat),
-    refunctionalize_expr tn (substitute' n e' e) =
-    substitute' n (refunctionalize_expr tn e')
-                (refunctionalize_expr tn e).
+Lemma dtorize_substitution: forall (e e' : expr) (tn : TypeName) (n : nat),
+    destructorize_expr tn (substitute' n e' e) =
+    substitute' n (destructorize_expr tn e')
+                (destructorize_expr tn e).
 Proof.
   intros.
   gen_dep n.

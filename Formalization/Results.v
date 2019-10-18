@@ -1,6 +1,6 @@
 (**************************************************************************************************)
-(* Total De/Refunctionalization for Local (Co)pattern Matching.                                   *)
-(* Note: This file (and the whole formalization) uses the terms de- and refunctionalization       *)
+(* Total Constructor/Destructorization for Local (Co)pattern Matching.                                   *)
+(* Note: This file (and the whole formalization) uses the terms de- and destructorization       *)
 (* instead of the terms constructorization and destructorization used in the paper                *)
 (*                                                                                                *)
 (* File: Results.v                                                                                *)
@@ -26,14 +26,14 @@ Require Import Eval.
 Require Import Typechecker.
 Require Import Progress.
 Require Import Preservation.
-Require Import DefuncIV.
-Require Import RefuncIV.
+Require Import CtorizeIV.
+Require Import DtorizeIV.
 Require Import InlineMatch.
 Require Import InlineComatch.
 Require Import InlineLiftMatch.
 Require Import InlineLiftComatch.
 
-(* Note: This file (and the whole formalization) uses the terms de- and refunctionalization       *)
+(* Note: This file (and the whole formalization) uses the terms de- and destructorization       *)
 (* instead of the terms constructorization and destructorization used in the paper                *)
 
 (* Since we extract functions to Haskell, we need proofs stating that the implemented functions reflect the inductive relations *)
@@ -108,21 +108,21 @@ Print Assumptions preservation.
 *)
 
 (**************************************************************************************************)
-(* Defunctionalization (Constructorization)                                                       *)
+(* Constructorization (Constructorization)                                                       *)
 (*                                                                                                *)
 (*                                                                                                *)
 (**************************************************************************************************)
 
-(* Defunctionalization is formalized as a three part process:                             *)
+(* Constructorization is formalized as a three part process:                             *)
 (*                                                                                        *)
 (*  ----------              ----------              ----------              ----------    *)
-(*  |        | liftComatch  |        | defunc       |        | inlineMatch  |        |    *)
+(*  |        | liftComatch  |        | ctorize       |        | inlineMatch  |        |    *)
 (*  |  P1    | ---------->  |  P2    | ---------->  |   P3   | -----------> |   P4   |    *)
 (*  |        |              |        |              |        |              |        |    *)
 (*  ----------              ----------              ----------              ----------    *)
 
-(* All three parts preserve well-formedness. They are defined by [defunctionalize_program_with_lift], *)
-(* which combines the first two parts (lifting and core defunc), and [inline_cfuns_to_program] for    *)
+(* All three parts preserve well-formedness. They are defined by [constructorize_program_with_lift], *)
+(* which combines the first two parts (lifting and core ctorize), and [inline_cfuns_to_program] for    *)
 (* the third part. Since well-formedness is part of the program definition, these algorithms are      *)
 (* responsible for maintaining it.                                                                    *)
 (*                                                                                                    *)
@@ -138,13 +138,13 @@ Print Assumptions preservation.
 
 (* 1. Uniqueness of local destructor names *)
 (* Background: For a program to be well-formed, we require that names of local matches and comatches
-   are unique. After defunctionalization, a local destructor call is turned into a local match.
+   are unique. After constructorization, a local destructor call is turned into a local match.
    
-   Therefore, we require that before defunctionalization, a local destructor is only called once in the
-   entire program. This ensures that the local matches created by defunctionalization from the local
+   Therefore, we require that before constructorization, a local destructor is only called once in the
+   entire program. This ensures that the local matches created by constructorization from the local
    destructors have unique names.
 
-   This property [defunc_preserves_local_cfuns] (see below) is among the "plumbing lemmas".
+   This property [ctorize_preserves_local_cfuns] (see below) is among the "plumbing lemmas".
  *)
 
 (* Collect the names of local destructors called in the given expression. *)
@@ -180,22 +180,22 @@ Definition called_local_destructor_names_unique_in_prog p :=
     (program_cfun_bods_g p ++ program_cfun_bods_l p)
     (program_gfun_bods_g p ++ program_gfun_bods_l p).
 
-(* note: defunctionalization = constructorization *)
-(* After defunctionalization, each local consumer function is only called once. *)
-(* Defunctionalization redistributes the bodies of cocases to the newly created
+(* note: constructorization = constructorization *)
+(* After constructorization, each local consumer function is only called once. *)
+(* Constructorization redistributes the bodies of cocases to the newly created
    consumer functions, but does not delete or add new such bodies.
    Since it also only creates local consumer function calls for the relevant type
    where there had previously been a local destructor call with the same name,
    this property holds given that names of called local destructors are unique.
  *)
-Theorem defunc_preserves_local_cfuns : forall (p : program) (tn : TypeName),
+Theorem ctorize_preserves_local_cfuns : forall (p : program) (tn : TypeName),
     called_local_destructor_names_unique_in_prog p ->
-    local_cfuns_only_used_once (defunctionalize_program_with_lift p tn).
+    local_cfuns_only_used_once (constructorize_program_with_lift p tn).
 Proof.
 Admitted. (* check Results.v for details on missing proofs *)
 
 (* 2. Ordering for inline *)
-(* In order to be able to inline the cfuns which result from defunctionalization, we need to ensure   *)
+(* In order to be able to inline the cfuns which result from constructorization, we need to ensure   *)
 (* that there is an ordering of these functions that allows sequential inlining.                      *)
 (* This is required since in general, there might be recursive "loops", e.g. a local cfun foo() which *)
 (* calls itself in its body.                                                                          *)
@@ -204,7 +204,7 @@ Admitted. (* check Results.v for details on missing proofs *)
 (* ... match _foo ... with                                                                            *)
 (*     ... match _foo ... with ...                                                                    *)
 (*                                                                                                    *)
-(* Fortunately, these cases are not in the image of the defunctionalization function, since programs  *)
+(* Fortunately, these cases are not in the image of the constructorization function, since programs  *)
 (* can only contain one call to every local destructor and since local cfun calls are in 1:1-corres-  *)
 (* pondence with destructor calls in the original program                                             *)
 
@@ -244,75 +244,75 @@ Admitted. (* check Results.v for details on missing proofs *)
 
 Theorem sort_cfuns_preserves_local_cfuns : forall (p : program) (tn : TypeName),
     called_local_destructor_names_unique_in_prog p ->
-    local_cfuns_only_used_once (sort_cfuns_for_inline_program (defunctionalize_program_with_lift p tn)).
+    local_cfuns_only_used_once (sort_cfuns_for_inline_program (constructorize_program_with_lift p tn)).
 Proof.
   intros.
   apply sort_cfuns_for_inline_preserves_local_cfuns_only_used_once.
-  apply defunc_preserves_local_cfuns. auto.
+  apply ctorize_preserves_local_cfuns. auto.
 Qed.
 Print Assumptions sort_cfuns_preserves_local_cfuns.
 (* This theorem has the following assumptions:
    - [sort_cfuns_for_inline_permutes]
    - [Permutations.sort_by_index_list_sorted_like_index]
-   - [defunc_preserves_local_cfun]
+   - [ctorize_preserves_local_cfun]
    These are explained in the prerequisites above
    *)
 
-Theorem defunc_generates_inline_ordered_cfuns : forall (p : program) (tn : TypeName),
+Theorem ctorize_generates_inline_ordered_cfuns : forall (p : program) (tn : TypeName),
     called_local_destructor_names_unique_in_prog p ->
-    inline_ordered_cfun (program_cfun_bods_l (sort_cfuns_for_inline_program (defunctionalize_program_with_lift p tn))).
+    inline_ordered_cfun (program_cfun_bods_l (sort_cfuns_for_inline_program (constructorize_program_with_lift p tn))).
 Proof.
   intros p tn H.
   apply sort_cfuns_for_inline_ordered_cfun.
-  apply defunc_preserves_local_cfuns; assumption.
+  apply ctorize_preserves_local_cfuns; assumption.
 Qed.
-Print Assumptions defunc_generates_inline_ordered_cfuns.
+Print Assumptions ctorize_generates_inline_ordered_cfuns.
 (* This theorem has the following assumptions:
-   - [defunc_preserves_local_cfuns]
+   - [ctorize_preserves_local_cfuns]
    - [sort_cfuns_for_inline_ordered_cfun]
    These are explained in the prerequisites above
    *)
 
 (* End Prerequisites *)
 
-(* Complete defunctionalization algorithm *)
-Definition defunc_complete (p : program) (tn: TypeName)
+(* Complete constructorization algorithm *)
+Definition ctorize_complete (p : program) (tn: TypeName)
     (pr : program_cfun_bods_l p = [])  (pr' : program_gfun_bods_l p = [])
     (Uniq : called_local_destructor_names_unique_in_prog p)
   : program :=
-  let x := defunctionalize_program_with_lift p tn in
+  let x := constructorize_program_with_lift p tn in
   let y := sort_cfuns_for_inline_program x in
   inline_cfuns_to_program y (sort_cfuns_preserves_local_cfuns p tn Uniq)
-    (defunc_generates_inline_ordered_cfuns p tn Uniq).
+    (ctorize_generates_inline_ordered_cfuns p tn Uniq).
 
-Print Assumptions defunc_complete.
+Print Assumptions ctorize_complete.
 (* This theorem has the following assumptions:
    - [sort_cfuns_for_inline_permutes ]
    - [sort_cfuns_for_inline_ordered_cfun]
    - [Permutations.sort_by_index_list_sorted_like_index]
    - [match_names_unique_after_inline_match]
    - [comatch_names_unique_after_inline_match]
-   - [defunc_preserves_local_cfuns]
+   - [ctorize_preserves_local_cfuns]
    These are explained in the prerequisites above
    *)
 
 
 (**************************************************************************************************)
-(* Refunctionalization (Destructorization)                                                        *)
+(* Destructorization (Destructorization)                                                        *)
 (*                                                                                                *)
 (*                                                                                                *)
 (**************************************************************************************************)
 
-(* Refunctionalization is formalized as a three part process:                             *)
+(* Destructorization is formalized as a three part process:                             *)
 (*                                                                                        *)
 (*  ----------              ----------              ----------              ----------    *)
-(*  |        | liftMatch    |        | refunc       |        |inlineComatch |        |    *)
+(*  |        | liftMatch    |        | dtorize       |        |inlineComatch |        |    *)
 (*  |  P1    | ---------->  |  P2    | ---------->  |   P3   | -----------> |   P4   |    *)
 (*  |        |              |        |              |        |              |        |    *)
 (*  ----------              ----------              ----------              ----------    *)
 
-(* All three parts preserve well-formedness. They are defined by [refunctionalize_program_with_lift], *)
-(* which combines the first two parts (lifting and core refunc), and [inline_cfuns_to_program] for    *)
+(* All three parts preserve well-formedness. They are defined by [destructorize_program_with_lift], *)
+(* which combines the first two parts (lifting and core dtorize), and [inline_cfuns_to_program] for    *)
 (* the third part. Since well-formedness is part of the program definition, these algorithms are      *)
 (* responsible for maintaining it.                                                                    *)
 (*                                                                                                    *)
@@ -324,17 +324,17 @@ Print Assumptions defunc_complete.
 (* they hold; see the "Prerequisites" section below.                                                  *)
 
 
-(* Prerequisites (analogous to defunctionalization prerequisites) *)
+(* Prerequisites (analogous to constructorization prerequisites) *)
 
 (* 1. Uniqueness of local constructor names *)
 (* Background: For a program to be well-formed, we require that names of local matches and comatches
-   are unique. After refunctionalization, a local constructor call is turned into a local comatch.
+   are unique. After destructorization, a local constructor call is turned into a local comatch.
    
-   Therefore, we require that before refunctionalization, a local constructor is only called once in the
-   entire program. This ensures that the local comatches created by refunctionalization from the local
+   Therefore, we require that before destructorization, a local constructor is only called once in the
+   entire program. This ensures that the local comatches created by destructorization from the local
    constructors have unique names.
 
-   This property [refunc_preserves_local_gfuns] (see below) is among the tedious to prove in Coq, but not
+   This property [dtorize_preserves_local_gfuns] (see below) is among the tedious to prove in Coq, but not
    very interesting, "plumbing" lemmas. 
  *)
 
@@ -371,23 +371,23 @@ Definition called_local_constructor_names_unique_in_prog p :=
     (program_cfun_bods_g p ++ program_cfun_bods_l p)
     (program_gfun_bods_g p ++ program_gfun_bods_l p).
 
-(* note: defunctionalization = destructorization *)
-(* After refunctionalization, each local generator function is only called once. *)
-(* Refunctionalization redistributes the bodies of cases to the newly created
+(* note: constructorization = destructorization *)
+(* After destructorization, each local generator function is only called once. *)
+(* Destructorization redistributes the bodies of cases to the newly created
    generator functions, but does not delete or add new such bodies.
    Since it also only creates local generator function calls for the relevant type
    where there had previously been a local constructor call with the same name,
    this property holds given that names of called local constructors are unique.
  *)
-Theorem refunc_preserves_local_gfuns : forall (p : program) (tn : TypeName),
+Theorem dtorize_preserves_local_gfuns : forall (p : program) (tn : TypeName),
     called_local_constructor_names_unique_in_prog p ->
-    local_gfuns_only_used_once (refunctionalize_program_with_lift p tn).
+    local_gfuns_only_used_once (destructorize_program_with_lift p tn).
 Proof.
 Admitted. (* check Results.v for details on missing proofs *)
 
 
 (* 2. Ordering for inline *)
-(* In order to be able to inline the gfuns which result from refunctionalization, we need to ensure   *)
+(* In order to be able to inline the gfuns which result from destructorization, we need to ensure   *)
 (* that there is an ordering of these functions that allows sequential inlining.                      *)
 (* This is required since in general, there might be recursive "loops", e.g. a local gfun foo() which *)
 (* calls itself in its body.                                                                          *)
@@ -396,7 +396,7 @@ Admitted. (* check Results.v for details on missing proofs *)
 (* ... comatch _foo ... with                                                                            *)
 (*     ... comatch _foo ... with ...                                                                    *)
 (*                                                                                                    *)
-(* Fortunately, these cases are not in the image of the refunctionalization function, since programs  *)
+(* Fortunately, these cases are not in the image of the destructorization function, since programs  *)
 (* can only contain one call to every local destructor and since local gfun calls are in 1:1-corres-  *)
 (* pondence with destructor calls in the original program                                             *)
 
@@ -437,87 +437,87 @@ Admitted. (* check Results.v for details on missing proofs *)
 
 Theorem sort_gfuns_preserves_local_gfuns : forall (p : program) (tn : TypeName),
     called_local_constructor_names_unique_in_prog p ->
-    local_gfuns_only_used_once (sort_gfuns_for_inline_program (refunctionalize_program_with_lift p tn)).
+    local_gfuns_only_used_once (sort_gfuns_for_inline_program (destructorize_program_with_lift p tn)).
 Proof.
   intros.
   apply sort_gfuns_for_inline_preserves_local_gfuns_only_used_once.
-  apply refunc_preserves_local_gfuns. auto.
+  apply dtorize_preserves_local_gfuns. auto.
 Qed.
 Print Assumptions sort_gfuns_preserves_local_gfuns.
 (* This theorem has the following assumptions:
    - [sort_gfuns_for_inline_permutes]
    - [Permutations.sort_by_index_list_sorted_like_index]
-   - [refunc_preserves_local_cfun]
+   - [dtorize_preserves_local_cfun]
    These are explained in the prerequisites above
    *)
 
-Theorem refunc_generates_inline_ordered_gfuns : forall (p : program) (tn : TypeName),
+Theorem dtorize_generates_inline_ordered_gfuns : forall (p : program) (tn : TypeName),
     called_local_constructor_names_unique_in_prog p ->
-    inline_ordered_gfun (program_gfun_bods_l (sort_gfuns_for_inline_program (refunctionalize_program_with_lift p tn))).
+    inline_ordered_gfun (program_gfun_bods_l (sort_gfuns_for_inline_program (destructorize_program_with_lift p tn))).
 Proof.
   intros p tn H.
   apply sort_gfuns_for_inline_ordered_gfun.
-  apply refunc_preserves_local_gfuns; assumption.
+  apply dtorize_preserves_local_gfuns; assumption.
 Qed.
-Print Assumptions refunc_generates_inline_ordered_gfuns.
+Print Assumptions dtorize_generates_inline_ordered_gfuns.
 (* This theorem has the following assumptions:
    - [sort_gfuns_for_inline_ordered_gfun]
-   - [refunc_preserves_local_cfun]
+   - [dtorize_preserves_local_cfun]
    These are explained in the prerequisites above
    *)
 
 (* End Prerequisites *)
 
-(* Complete refunctionalization algorithm *)
-Definition refunc_complete (p : program) (tn: TypeName)
+(* Complete destructorization algorithm *)
+Definition dtorize_complete (p : program) (tn: TypeName)
     (pr : program_cfun_bods_l p = [])  (pr' : program_gfun_bods_l p = [])
     (Uniq : called_local_constructor_names_unique_in_prog p)
   : program :=
-  let x := refunctionalize_program_with_lift p tn in
+  let x := destructorize_program_with_lift p tn in
   let y := sort_gfuns_for_inline_program x in
   inline_gfuns_to_program y (sort_gfuns_preserves_local_gfuns p tn Uniq)
-    (refunc_generates_inline_ordered_gfuns p tn Uniq).
+    (dtorize_generates_inline_ordered_gfuns p tn Uniq).
 
-Print Assumptions refunc_complete.
+Print Assumptions dtorize_complete.
 (* This theorem has the following assumptions:
    - [sort_gfuns_for_inline_permutes]
    - [sort_gfuns_for_inline_ordered_gfun]
    - [Permutations.sort_by_index_list_sorted_like_index]
    - [new_match_names_unique]
    - [new_comatch_names_unique]
-   - [refunc_preserves_local_gfuns]
+   - [dtorize_preserves_local_gfuns]
    These are explained in the prerequisites above
    *)
 
 
 (**************************************************************************************************)
-(* Defunctionalization and refunctionalization are inverse to each other                          *)
+(* Constructorization and destructorization are inverse to each other                          *)
 (*                                                                                                *)
 (*                                                                                                *)
 (**************************************************************************************************)
 
-(* The core parts of defunctionalization and refunctionalization (i.e., without lift and inline)
+(* The core parts of constructorization and destructorization (i.e., without lift and inline)
    are inverse to each other. This is shown by these Coq proofs:
  *)
 
 Require Import XfuncInverse.
 
-(* note: defunctionalization = constructorization *)
-(* note: refunctionalization = destructorization  *)
-(* Defunc., then refunc. *)
-Print derefunc_preserves_prog.
-Print Assumptions derefunc_preserves_prog.
+(* note: constructorization = constructorization *)
+(* note: destructorization = destructorization  *)
+(* Ctorize., then dtorize. *)
+Print ctorize_dtorize_preserves_prog.
+Print Assumptions ctorize_dtorize_preserves_prog.
 (* Assumptions:
    proof_irrelevance:
         we use proof irrelevance in certain places to show equality between programs or skeletons,
         since we do not care about the content of their well-formedness properties
 *)
 
-(* note: defunctionalization = constructorization *)
-(* note: refunctionalization = destructorization  *)
-(* Refunc., then defunc. *)
-Print redefunc_preserves_prog.
-Print Assumptions redefunc_preserves_prog.
+(* note: constructorization = constructorization *)
+(* note: destructorization = destructorization  *)
+(* Dtorize., then ctorize. *)
+Print rectorize_preserves_prog.
+Print Assumptions rectorize_preserves_prog.
 (* Assumptions:
    proof_irrelevance:
         we use proof irrelevance in certain places to show equality between programs or skeletons,
@@ -529,13 +529,13 @@ Print Assumptions redefunc_preserves_prog.
    in a certain way. This reordering does not affect typechecking and semantics.
  *)
 
-(* The complete algorithms for defunctionalization and refunctionalization are made up
+(* The complete algorithms for constructorization and destructorization are made up
    of multiple parts, as explained above. This means that the inverseness statement
-   for the complete de- and refunctionalization is:
+   for the complete de- and destructorization is:
  *)
 
-(* lift_comatches . defunctionalize_core . sort_cfuns_for_inline_program . inline_local_cfuns .
-   lift_matches . refunctionalize_core . sort_gfuns_for_inline_program . inline_local_gfuns
+(* lift_comatches . constructorize_core . sort_cfuns_for_inline_program . inline_local_cfuns .
+   lift_matches . destructorize_core . sort_gfuns_for_inline_program . inline_local_gfuns
    = id, up to permutation of functions and signatures
  *)
 (* We will from now on consider = to mean equality up to such permutation. *)
@@ -543,18 +543,18 @@ Print Assumptions redefunc_preserves_prog.
 (* Sortin local consumer functions, then inlining local consumer functions and
    finally lifting these just inlined matches is equality in this sense. Thus we have:
  *)
-(* lift_comatches . defunctionalize_core . sort_cfuns_for_inline_program . inline_local_cfuns .
-   lift_matches . refunctionalize_core . sort_gfuns_for_inline_program . inline_local_gfuns
+(* lift_comatches . constructorize_core . sort_cfuns_for_inline_program . inline_local_cfuns .
+   lift_matches . destructorize_core . sort_gfuns_for_inline_program . inline_local_gfuns
 
- = lift_comatches . defunctionalize_core . refunctionalize_core . 
+ = lift_comatches . constructorize_core . destructorize_core . 
    sort_gfuns_for_inline_program . inline_local_gfuns
  *)
 
-(* By the Coq proof [derefunc_preserves_prog] given above, core de- and refunctionalization are
+(* By the Coq proof [ctorize_dtorize_preserves_prog] given above, core de- and destructorization are
    inverse to each other, so we eliminate their composition:
  *)
 (*
-   lift_comatches . defunctionalize_core . refunctionalize_core
+   lift_comatches . constructorize_core . destructorize_core
    sort_gfuns_for_inline_program . inline_local_gfuns
 
  = lift_comatches . sort_gfuns_for_inline_program . inline_local_gfuns
@@ -570,14 +570,14 @@ Print Assumptions redefunc_preserves_prog.
 
 (* The proof for the other direction (statement shown below) is analogous. *)
 
-(* lift_matches . refunctionalize_core . sort_gfuns_for_inline_program . inline_local_gfuns .
-   lift_comatches . defunctionalize_core . sort_cfuns_for_inline_program . inline_local_cfuns
+(* lift_matches . destructorize_core . sort_gfuns_for_inline_program . inline_local_gfuns .
+   lift_comatches . constructorize_core . sort_cfuns_for_inline_program . inline_local_cfuns
    = id, up to permutation of functions and signatures
  *)
 
 
 (**************************************************************************************************)
-(* Defunctionalization and refunctionalization preserve semantics                                 *)
+(* Constructorization and destructorization preserve semantics                                 *)
 (*                                                                                                *)
 (*                                                                                                *)
 (**************************************************************************************************)
@@ -779,10 +779,10 @@ in bs by their corresponding values.
 
     ------------------------------------------------------------------------------------------------
 
-    Lemma R2.1: Given an expression expr, the result of (refunctionalize expr) will be a value iff
+    Lemma R2.1: Given an expression expr, the result of (destructorize expr) will be a value iff
         expr is a value.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We will perform an induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -791,23 +791,23 @@ in bs by their corresponding values.
         for some expression e of type T, a cfun d for type T and a list of expressions as,
         then this is a simple congruence case, which can immediately be resolved by induction.
         If it is of the first form C(as), then it is a value iff all expressions in as are values.
-        The result of refunctionalization of C(as) will be
+        The result of destructorization of C(as) will be
         C'(as'),
-        where C' is the new gfun corresponding to C and as' are the recursively refunctionalized
+        where C' is the new gfun corresponding to C and as' are the recursively destructorized
         arguments.
         This is a value iff all expressions in as' are values, which by induction is true iff all
         expressions in as are values, which is true iff C(as) is a value.
-        Similarly, in the second case, e.d(as) is not a value and its refunctionalization is
+        Similarly, in the second case, e.d(as) is not a value and its destructorization is
         e'.d'(as')
-        with e' the refunctionalization of e, d' the new destructor corresponding to d and as' the
-        recursively refunctionalized list as.
+        with e' the destructorization of e, d' the new destructor corresponding to d and as' the
+        recursively destructorized list as.
         This is also not a value, thus concluding the proof.
     Qed.
 
-    Lemma D2.1: Given an expression expr, the result of (defunctionalize expr) will be a value iff
+    Lemma D2.1: Given an expression expr, the result of (constructorize expr) will be a value iff
         expr is a value.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We will perform an induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -816,23 +816,23 @@ in bs by their corresponding values.
         for some expression e of type T, a destructor d for type T and a list of expressions as,
         then this is a simple congruence case, which can immediately be resolved by induction.
         If it is of the first form C(as), then it is a value iff all expressions in as are values.
-        The result of defunctionalization of C(as) will be
+        The result of constructorization of C(as) will be
         C'(as'),
         where C' is the new constructor corresponding to C and as' are the recursively
-        defunctionalized arguments.
+        constructorized arguments.
         This is a value iff all expressions in as' are values, which by induction is true iff all
         expressions in as are values, which is true iff C(as) is a value.
-        Similarly, in the second case, e.d(as) is not a value and its defunctionalization is
+        Similarly, in the second case, e.d(as) is not a value and its constructorization is
         e'.d'(as')
-        with e' the defunctionalization of e, d' the new cfun corresponding to d and as' the
-        recursively defunctionalized list as.
+        with e' the constructorization of e, d' the new cfun corresponding to d and as' the
+        recursively constructorized list as.
         This is also not a value, thus concluding the proof.
     Qed.
 
-    Lemma R2.2: Given an expression expr, the result of (refunctionalize expr) will be a redex iff
+    Lemma R2.2: Given an expression expr, the result of (destructorize expr) will be a redex iff
         expr is a redex.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We start by induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -842,25 +842,25 @@ in bs by their corresponding values.
         then this is a simple congruence case, which can immediately be resolved by induction and
         Lemma R2.1.
         If it is of the first form C(as), then it is not an outermost redex.
-        The result of refunctionalization of C(as) will be
+        The result of destructorization of C(as) will be
         C'(as'),
-        where C' is the new gfun corresponding to C and as' are the recursively refunctionalized
+        where C' is the new gfun corresponding to C and as' are the recursively destructorized
         arguments.
         This also can never be a redex.
         Similarly, in the second case, e.d(as) is a redex iff e and all expressions in as are values
-        and its refunctionalization is
+        and its destructorization is
         e'.d'(as')
-        with e' the refunctionalization of e, d' the new destructor corresponding to d and as' the
-        recursively refunctionalized list as.
+        with e' the destructorization of e, d' the new destructor corresponding to d and as' the
+        recursively destructorized list as.
         This is a redex iff e' and all expressions in as' are values, which by Lemma R2.1 is the
         case iff e and all expressions in as are values, which is once again is true iff the
         e.d(as) is a redex.
     Qed.
 
-    Lemma D2.2: Given an expression expr, the result of (defunctionalize expr) will be a redex iff
+    Lemma D2.2: Given an expression expr, the result of (constructorize expr) will be a redex iff
         expr is a redex.
     Proof.
-        First, fix T to be the type to be defunctionalized.
+        First, fix T to be the type to be constructorized.
         We start by induction on the structure of expr.
         If the input expression is not of the form
         C(as)
@@ -870,28 +870,28 @@ in bs by their corresponding values.
         then this is a simple congruence case, which can immediately be resolved by induction and
         Lemma D2.1.
         If it is of the first form C(as), then it is not an outermost redex.
-        The result of defunctionalization of C(as) will be
+        The result of constructorization of C(as) will be
         C'(as'),
         where C' is the new constructor corresponding to C and as' are the recursively
-        defunctionalized arguments.
+        constructorized arguments.
         This also can never be a redex.
         Similarly, in the second case, e.d(as) is a redex iff e and all expressions in as are values
-        and its defunctionalization is
+        and its constructorization is
         e'.d'(as')
-        with e' the defunctionalization of e, d' the new cfun corresponding to d and as' the
-        recursively defunctionalized list as.
+        with e' the constructorization of e, d' the new cfun corresponding to d and as' the
+        recursively constructorized list as.
         This is a redex iff e' and all expressions in as' are values, which by Lemma D2.1 is the
         case iff e and all expressions in as are values, which is once again is true iff the
         e.d(as) is a redex.
     Qed.
 
     Lemma R2.3 Given an expression expr,
-        one_step_eval (refunctionalize expr) = refunctionalize (one_step_eval expr),
-        i.e. refunctionalize preserves reduction.
+        one_step_eval (destructorize expr) = destructorize (one_step_eval expr),
+        i.e. destructorize preserves reduction.
     Proof.
-        First, fix T to be the type to be refunctionalized.
+        First, fix T to be the type to be destructorized.
         We will perform an induction on the structure of expr.
-        Since, by Lemmas R2.1 and R2.2, refunctionalization preserves values and redexes, we only
+        Since, by Lemmas R2.1 and R2.2, destructorization preserves values and redexes, we only
         need to consider the case of redexes which involve a cfun call on a constructor on T where
         all arguments are already values, since all other cases are once again congruences that can
         immediately be handled by induction.
@@ -907,9 +907,9 @@ in bs by their corresponding values.
         for some expression e.
         Hence, reducing would result in
         e[vs -> as][ws -> bs].
-        After refunctionalization, we get
+        After destructorization, we get
         C'(as').d'(bs'),
-        with as' and bs' being the recursively refunctionalized expression list as and bs,
+        with as' and bs' being the recursively destructorized expression list as and bs,
         respectively, and C' and d' being the new corresponding gfun and destructor names,
         respectively.
         Additionally, we replace the cfun d by a new gfun
@@ -918,20 +918,20 @@ in bs by their corresponding values.
             d(ws) => e'
             ...
         with variable lists vs and ws as well as the expression e', which is the result of
-        refunctionalizing e.
+        destructorizing e.
         Reducing the result would yield
         e'[vs -> as'][ws -> bs'],
-        which, by the substition lemma refunc_substitution, is the result of refunctionalizing
+        which, by the substition lemma dtorize_substitution, is the result of destructorizing
         e[vs -> as][ws -> bs].
     Qed.
 
     Lemma D2.3 Given an expression expr,
-        one_step_eval (defunctionalize expr) = defunctionalize (one_step_eval expr),
-        i.e. defunctionalize preserves reduction.
+        one_step_eval (constructorize expr) = constructorize (one_step_eval expr),
+        i.e. constructorize preserves reduction.
     Proof.
-        First, fix T to be the type to be defunctionalized.
+        First, fix T to be the type to be constructorized.
         We will perform an induction on the structure of expr.
-        Since, by Lemmas D2.1 and D2.2, defunctionalization preserves values and redexes, we only
+        Since, by Lemmas D2.1 and D2.2, constructorization preserves values and redexes, we only
         need to consider the case of redexes which involve a destructor call on a gfun on T where
         all arguments are already values, since all other cases are once again congruences that can
         immediately be handled by induction.
@@ -947,9 +947,9 @@ in bs by their corresponding values.
         for some expression e.
         Hence, reducing would result in
         e[vs -> as][ws -> bs].
-        After defunctionalization, we get
+        After constructorization, we get
         C'(as').d'(bs'),
-        with as' and bs' being the recursively defunctionalized expression list as and bs,
+        with as' and bs' being the recursively constructorized expression list as and bs,
         respectively, and C' and d' being the new corresponding constructor and cfun names,
         respectively.
         Additionally, we replace the gfun d by a new cfun
@@ -958,10 +958,10 @@ in bs by their corresponding values.
             C(vs) => e'
             ...
         with variable lists vs and ws as well as the expression e', which is the result of
-        defunctionalizing e.
+        constructorizing e.
         Reducing the result would yield
         e'[vs -> as'][ws -> bs'],
-        which, by the substition lemma defunc_substitution, is the result of defunctionalizing
+        which, by the substition lemma ctorize_substitution, is the result of constructorizing
         e[vs -> as][ws -> bs].
     Qed.
 

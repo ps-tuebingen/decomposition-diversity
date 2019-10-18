@@ -27,11 +27,11 @@ import Eval
 import LiftComatch
 import InlineMatch
 import InlineOrderCfuns
-import DefuncIII
+import CtorizeIII
 import LiftMatch
 import InlineComatch
 import InlineOrderGfuns
-import RefuncIII
+import DtorizeIII
 import Parser.Combined (parseExpression, parseProgram)
 
 --------------------------------------------------------------------------------
@@ -187,7 +187,7 @@ showProgram _ = execIfInNormalMode $ do
 --------------------------------------------------------------------------------
 
 constructorizeProg :: TypeName -> Coq_program -> Coq_program
-constructorizeProg tn = inline_cfuns_to_program . reorder_cfuns . flip defunctionalize_program tn . flip lift_comatch_to_program tn
+constructorizeProg tn = inline_cfuns_to_program . reorder_cfuns . flip constructorize_program tn . flip lift_comatch_to_program tn
 
 -- | Takes one argument and replaces the current Program by its constructorized version.
 constructorize :: [String] -> Repl ()
@@ -205,7 +205,7 @@ constructorize (arg:_) = execIfInNormalMode $ do
 --------------------------------------------------------------------------------
 
 destructorizeProg :: TypeName -> Coq_program -> Coq_program
-destructorizeProg tn = inline_gfuns_to_program . reorder_gfuns . flip refunctionalize_program tn . flip lift_match_to_program tn
+destructorizeProg tn = inline_gfuns_to_program . reorder_gfuns . flip destructorize_program tn . flip lift_match_to_program tn
 
 -- | Takes one argument and replaces the current Program by its constructorized version.
 destructorize :: [String] -> Repl ()

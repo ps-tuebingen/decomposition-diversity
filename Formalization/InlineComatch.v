@@ -1,6 +1,6 @@
 (* -*- company-coq-initial-fold-state: bullets; -*- *)
 (**************************************************************************************************)
-(* Total De/Refunctionalization for Local (Co)pattern Matching.                                   *)
+(* Total Constructor/Destructorization for Local (Co)pattern Matching.                                   *)
 (*                                                                                                *)
 (* File: InlineComatch.v                                                                          *)
 (*                                                                                                *)

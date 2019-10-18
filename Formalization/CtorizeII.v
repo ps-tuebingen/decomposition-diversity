@@ -17,45 +17,45 @@ Require Import UtilsProgram.
 Require Import UtilsSkeleton.
 Require Import Skeleton.
 Require Import Typechecker.
-Require Import DefuncI.
+Require Import CtorizeI.
 Require Import LiftComatch.
 Require Import Subterm.
 (*Require Import FunInd.*)
 
 (**************************************************************************************************)
-(** * Defunctionalization Part II:                                                                *)
+(** * Constructorization Part II:                                                                *)
 (**                                                                                               *)
 (** In the second part of the algorithm we compute the new function bodies.                       *)
 (**************************************************************************************************)
 
-Fixpoint defunctionalize_expr (tn : TypeName) (e : expr) : expr :=
+Fixpoint constructorize_expr (tn : TypeName) (e : expr) : expr :=
   match e with
   | E_Var n => E_Var n
-  | E_Constr sn es => E_Constr sn (map (defunctionalize_expr tn) es)
+  | E_Constr sn es => E_Constr sn (map (constructorize_expr tn) es)
   | E_DestrCall sn e es =>
       if eq_TypeName tn (fst (unscope sn))
-      then E_ConsFunCall sn (defunctionalize_expr tn e) (map (defunctionalize_expr tn) es)
-      else E_DestrCall sn (defunctionalize_expr tn e) (map (defunctionalize_expr tn) es)
-  | E_FunCall n es => E_FunCall n (map (defunctionalize_expr tn) es)
+      then E_ConsFunCall sn (constructorize_expr tn e) (map (constructorize_expr tn) es)
+      else E_DestrCall sn (constructorize_expr tn e) (map (constructorize_expr tn) es)
+  | E_FunCall n es => E_FunCall n (map (constructorize_expr tn) es)
   | E_GenFunCall sn es =>
       if eq_TypeName tn (fst (unscope sn))
-      then E_Constr sn (map (defunctionalize_expr tn) es)
-      else E_GenFunCall sn (map (defunctionalize_expr tn) es)
-  | E_ConsFunCall sn e es => E_ConsFunCall sn (defunctionalize_expr tn e) (map (defunctionalize_expr tn) es)
+      then E_Constr sn (map (constructorize_expr tn) es)
+      else E_GenFunCall sn (map (constructorize_expr tn) es)
+  | E_ConsFunCall sn e es => E_ConsFunCall sn (constructorize_expr tn e) (map (constructorize_expr tn) es)
   | E_Match qn e bs cases t =>
-      E_Match qn (defunctionalize_expr tn e)
-              (map (fun x => (defunctionalize_expr tn (fst x), snd x)) bs)
-              (map (fun x => (fst x, defunctionalize_expr tn (snd x))) cases) t
+      E_Match qn (constructorize_expr tn e)
+              (map (fun x => (constructorize_expr tn (fst x), snd x)) bs)
+              (map (fun x => (fst x, constructorize_expr tn (snd x))) cases) t
   | E_CoMatch qn bs cocases =>
       (* Without lift/inline, we would have a case distinction... *)
       (*
       if eq_TypeName tn (fst qn)
       (* ...but this case may actually never occur (and will not, thanks to comatch lifting) *)
-      then E_Constr (local qn) (map (fun x => defunctionalize_expr tn (fst x)) bs)
+      then E_Constr (local qn) (map (fun x => constructorize_expr tn (fst x)) bs)
       else *)
-      E_CoMatch qn (map (fun x => (defunctionalize_expr tn (fst x), snd x)) bs)
-                   (map (fun x => (fst x, defunctionalize_expr tn (snd x))) cocases)
-  | E_Let e1 e2 => E_Let (defunctionalize_expr tn e1) (defunctionalize_expr tn e2)
+      E_CoMatch qn (map (fun x => (constructorize_expr tn (fst x), snd x)) bs)
+                   (map (fun x => (fst x, constructorize_expr tn (snd x))) cocases)
+  | E_Let e1 e2 => E_Let (constructorize_expr tn e1) (constructorize_expr tn e2)
   end.
 
 
@@ -70,10 +70,10 @@ intros. induction l... simpl. case_eq (g a); intros.
 Qed.
 
 
-Lemma defunctionalize_expr_preserves_typing : forall p tn e ctx t,
+Lemma constructorize_expr_preserves_typing : forall p tn e ctx t,
   (forall e' n bs cocases, subterm e' e -> e' <> E_CoMatch (tn,n) bs cocases) ->
   (program_skeleton p) / ctx |- e : t ->
-  (defunctionalize_to_skeleton p tn) / ctx |- (defunctionalize_expr tn e) : t.
+  (constructorize_to_skeleton p tn) / ctx |- (constructorize_expr tn e) : t.
 Proof with try apply in_eq; try apply in_cons; eauto.
 intros. generalize dependent ctx. generalize dependent t. generalize H. clear H.
 induction e using expr_strong_ind; intros.
@@ -181,7 +181,7 @@ induction e using expr_strong_ind; intros.
          ++ inversion H; subst. apply H4... intros. apply H3 with (x:=e)...
          ++ apply IHListTypeDeriv; try inversion H... intros. apply H3 with (x:=x0)...
 - simpl. inversion H2; subst.
-  apply T_Match with (bindings_exprs := map (defunctionalize_expr tn) bindings_exprs)
+  apply T_Match with (bindings_exprs := map (constructorize_expr tn) bindings_exprs)
     (bindings_types := bindings_types) (ctorlist := ctorlist).
   + apply IHe... intros. unfold not in *. apply H1. eapply Sub_Trans... apply Sub_Match_e0.
   + rewrite map_fst_f_combine...
@@ -193,7 +193,7 @@ induction e using expr_strong_ind; intros.
     * inversion H0; subst. apply H4... intros. unfold not in *. eapply H3...
     * apply IHListTypeDeriv; try inversion H0... intros. apply H3 with (x:=x0)...
   + unfold lookup_ctors. unfold lookup_ctors in *.
-    remember (filter (eq_TypeName (fst n)) (skeleton_dts (defunctionalize_to_skeleton p tn))) as fl.
+    remember (filter (eq_TypeName (fst n)) (skeleton_dts (constructorize_to_skeleton p tn))) as fl.
     simpl. clear - H14 Heqfl.
     destruct (filter (eq_TypeName (fst n)) (skeleton_dts (program_skeleton p))) eqn:E; try discriminate.
     inversion H14. subst ctorlist. clear H14. pose proof (in_eq t l). rewrite <- E in H.
@@ -258,7 +258,7 @@ induction e using expr_strong_ind; intros.
   + exfalso. unfold not in H1. rewrite eq_TypeName_eq in H3. subst. destruct n.
     eapply H1; try eapply Sub_Refl...
   + simpl. inversion H2. subst.
-    apply T_CoMatch with (bindings_exprs := map (defunctionalize_expr tn) bindings_exprs)
+    apply T_CoMatch with (bindings_exprs := map (constructorize_expr tn) bindings_exprs)
     (bindings_types := bindings_types) (dtorlist := dtorlist).
     * rewrite map_fst_f_combine...
     * assert (forall x y n bs cocases,

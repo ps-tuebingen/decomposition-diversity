@@ -17,7 +17,7 @@ DEP = $(SRC:.v=.d)
 OBJ = $(SRC:.v=.vo)
 
 # The default target
-all: Eval.vo Progress.vo Preservation.vo LiftMatch.vo LiftComatch.vo InlineLiftMatch.vo InlineComatch.vo DefuncIII.vo RefuncIII.vo XfuncSubst.vo XfuncInverse.vo TypecheckProgram.vo Sublists.vo Results.vo RefuncIV.vo DefuncIV.vo ProgramEquivalence.vo
+all: Eval.vo Progress.vo Preservation.vo LiftMatch.vo LiftComatch.vo InlineLiftMatch.vo InlineComatch.vo CtorizeIII.vo DtorizeIII.vo XfuncSubst.vo XfuncInverse.vo TypecheckProgram.vo Sublists.vo DtorizeIV.vo CtorizeIV.vo ProgramEquivalence.vo Results.vo
 
 %.d: %.v
 	$(COQDEP) $(COQDEPFLAGS) $*.v | head -n1 | sed 's/\s*[a-zA-Z]*\.v\.beautified//g' > $*.d

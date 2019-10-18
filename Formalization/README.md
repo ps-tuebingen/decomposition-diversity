@@ -1,4 +1,4 @@
-# Formalization of total Defunctionalization / Refunctionalization
+# Formalization of total Constructorization / Destructorization
 
 ## Dependencies
 
@@ -8,10 +8,6 @@
 
 The most important parts of the formalization are contained in the following files
 and in the file `Results.v`, which explains how we validated the theorems stated in our paper.
-
-Please note that this file (and the whole formalization) uses the terms de- and
-refunctionalization instead of the terms constructorization and
-destructorization used in the paper.
 
 ### AST.v
 
@@ -149,8 +145,8 @@ Theorem preservation : forall (p : program) (e1 e2 : expr) (t : TypeName),
     (program_skeleton p) / [] |- e2 : t.
 ```
 
-### {D,R}efuncI.v to {D,R}efuncIV.v, Lift..., Inline...
+### {D,C}torizeI.v to {D,C}torizeIV.v, Lift..., Inline...
 
-For an overview of how the definitions and lemmas in these files are used to form our defunctionalization
-and refunctionalization algorithms and prove their properties as stated in our paper, please refer to `Results.v`.
+For an overview of how the definitions and lemmas in these files are used to form our constructorization
+and destructorization algorithms and prove their properties as stated in our paper, please refer to `Results.v`.
 

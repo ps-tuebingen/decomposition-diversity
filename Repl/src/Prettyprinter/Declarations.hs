@@ -106,10 +106,11 @@ selectFunctionDeclarations prog =
     (\((n, argts), rtype) -> (n, argts, rtype, fromMaybe (error "Could not find function body.") (lookup n funbods))) <$> funsigs
 
 -- | Rename the body of a function declaration into ExprNamed.
-renameFunctionDeclaration :: Coq_skeleton -> (Name, [TypeName], TypeName, Coq_expr) -> (Name, [TypeName], TypeName, ExprNamed)
-renameFunctionDeclaration sk (n, argts, rtype, body) = (n, argts, rtype, renamedBody)
-  where
-    renamedBody = deBruijnToNamed' (fromToNames 0 (length argts -1)) (coqToDeBruijn sk body)
+renameFunctionDeclaration :: Coq_skeleton -> (Name, [TypeName], TypeName, Coq_expr) -> Either String (Name, [TypeName], TypeName, ExprNamed)
+renameFunctionDeclaration sk (n, argts, rtype, body) = do
+  renamedBody <- coqToDeBruijn sk body
+  let renamedBody' = deBruijnToNamed' (fromToNames 0 (length argts -1)) renamedBody
+  return (n, argts, rtype, renamedBody')
 
 -- | Prettyprint a single function declaration.
 functionDeclarationToDoc :: Name -> [TypeName] -> TypeName -> ExprNamed -> PrettyPrinter
@@ -124,7 +125,8 @@ functionDeclarationToDoc fname argts rtype body = do
 functionDeclarationsToDoc :: Coq_program -> PrettyPrinter
 functionDeclarationsToDoc prog = do
   let funDecls = selectFunctionDeclarations prog
-  let renamedFunDecls = renameFunctionDeclaration (program_skeleton prog) <$> funDecls
+  let renameFunctionDeclaration' = (either (error "Renaming Function declaration failed") id) . (renameFunctionDeclaration (program_skeleton prog))
+  let renamedFunDecls = renameFunctionDeclaration' <$> funDecls
   ppRenamedFunDecls <- sequence ((\(n, argts, rtype, body) -> functionDeclarationToDoc n argts rtype body) <$> renamedFunDecls)
   return $ vsep ppRenamedFunDecls
 
@@ -162,7 +164,7 @@ renameConsumerFunctionDeclaration1 :: Coq_skeleton
                                    -> (QName, [TypeName], TypeName, [(ScopedName, [TypeName], Coq_expr)])
 renameConsumerFunctionDeclaration1 sk (qn, argts, rtype, cases) = (qn, argts, rtype, cases')
   where
-    cases' = (\(sn,e) -> (sn, lookupArgs sn sk, e)) <$> cases
+    cases' = (\(sn,e) -> (sn, either (error "renameConsumerFunctionDeclaration") id $ lookupArgs sn sk, e)) <$> cases
 
 -- | Rename the body inside the cases into ExprNamed.
 renameConsumerFunctionDeclaration2 :: Coq_skeleton
@@ -173,7 +175,7 @@ renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = (qn, argts, rt
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
+          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single consumer function declaration.
@@ -231,7 +233,7 @@ renameGeneratorFunctionDeclaration1 :: Coq_skeleton
                                    -> (QName, [TypeName], [(ScopedName, [TypeName], Coq_expr)])
 renameGeneratorFunctionDeclaration1 sk (qn, argts, cases) = (qn, argts, cases')
   where
-    cases' = (\(sn,e) -> (sn, lookupArgs sn sk, e)) <$> cases
+    cases' = (\(sn,e) -> (sn, either (error "foo") id $ lookupArgs sn sk, e)) <$> cases
 
 -- | Rename the body inside the cocases into ExprNamed.
 renameGeneratorFunctionDeclaration2 :: Coq_skeleton
@@ -242,7 +244,7 @@ renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = (qn, argts, cases')
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (coqToDeBruijn sk e)))
+          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single generator function declaration.

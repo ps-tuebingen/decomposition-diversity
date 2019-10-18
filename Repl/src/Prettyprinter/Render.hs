@@ -80,6 +80,7 @@ exprToMyDoc :: PrettyPrinterConfig -> Coq_expr -> MyDoc
 exprToMyDoc ppConfig =   (flip runReader ppConfig)
                         . exprToDoc
                         . deBruijnToNamed
+                        . either (error "Could not change coq program to DeBruijn") id
                         . coqToDeBruijn (program_skeleton (program ppConfig))
 
 -- | Prettyprint all datatypes as a string.

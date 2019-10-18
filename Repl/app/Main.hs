@@ -455,7 +455,6 @@ completer = Prefix cmdCompleter prefixCompleters
       , (":constructorize", constructorizeCompleter)
       , (":set", setCompleter)
       , (":unset", setCompleter)
-      --  , (":load", loadCompleter)
       , (":load", fileCompleter)
       ]
 
@@ -468,19 +467,6 @@ cmdCompleter = mkWordCompleter (_simpleComplete f)
   where
     f n = return $ filter (isPrefixOf n) completionlist
     _simpleComplete f word = map simpleCompletion <$> f word
-
--- | Completes ":load" commands with "*.ub" files in current directory.
-loadCompleter :: CompletionFunc InnerRepl
-loadCompleter = mkWordCompleter getLoadCompletions
-  where
-    getLoadCompletions s = do
-      directoryContents <- liftIO $ getCurrentDirectory >>= getDirectoryContents
-      filteredDirs <-liftIO $ filterM doesDirectoryExist directoryContents
-      filtered <-liftIO $  filterM doesFileExist directoryContents
-      let filtered' = filter (".ub" `isSuffixOf`) filtered
-      let filtered'' = filter (isPrefixOf s) filtered'
-      return $ fmap simpleCompletion (filtered'' ++ filteredDirs)
-      return $ fmap simpleCompletion filteredDirs
 
 -- | Completes ":destructorize" commands with available datatypes.
 destructorizeCompleter :: CompletionFunc InnerRepl

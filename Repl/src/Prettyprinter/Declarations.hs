@@ -109,7 +109,7 @@ selectFunctionDeclarations prog =
 renameFunctionDeclaration :: Coq_skeleton -> (Name, [TypeName], TypeName, Coq_expr) -> Either String (Name, [TypeName], TypeName, ExprNamed)
 renameFunctionDeclaration sk (n, argts, rtype, body) = do
   renamedBody <- coqToDeBruijn sk body
-  let renamedBody' = deBruijnToNamed' (fromToNames 0 (length argts -1)) renamedBody
+  let renamedBody' = either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length argts -1)) renamedBody
   return (n, argts, rtype, renamedBody')
 
 -- | Prettyprint a single function declaration.
@@ -175,7 +175,7 @@ renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = (qn, argts, rt
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
+          (sn, argts', either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single consumer function declaration.
@@ -244,7 +244,7 @@ renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = (qn, argts, cases')
     cases' =
       fmap
       (\(sn,argts',e) ->
-          (sn, argts', deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
+          (sn, argts', either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
       cases
 
 -- | Prettyprint a single generator function declaration.

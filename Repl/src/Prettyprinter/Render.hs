@@ -79,6 +79,7 @@ docToTerminal doc = do
 exprToMyDoc :: PrettyPrinterConfig -> Coq_expr -> MyDoc
 exprToMyDoc ppConfig =   (flip runReader ppConfig)
                         . exprToDoc
+                        . either (error "Could not change coq program to Named") id
                         . deBruijnToNamed
                         . either (error "Could not change coq program to DeBruijn") id
                         . coqToDeBruijn (program_skeleton (program ppConfig))

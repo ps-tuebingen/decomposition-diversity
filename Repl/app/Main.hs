@@ -176,7 +176,7 @@ showProgram :: [String] -> Repl ()
 showProgram _ = execIfInNormalMode $ do
   prog <- extractFromReplState currentProgram
   ppConfig <- getPrettyPrinterConfig
-  liftIO $ progToStringANSI (ppConfig {program = prog}) prog
+  liftIO $ docToTerminal $ progToMyDoc (ppConfig {program = prog}) prog
 
 
 --------------------------------------------------------------------------------
@@ -323,7 +323,7 @@ printSteps exprs = do
   let printStep :: (Int, Coq_expr) -> Repl ()
       printStep (n,e) = do
         putReplStrLn $ "STEP " ++ show n
-        liftIO $ exprToStringANSI ppConfig e
+        liftIO $ docToTerminal $ exprToMyDoc ppConfig e
   let numberedExprs = zip [1..] exprs
   sequence_ (printStep <$> numberedExprs)
 
@@ -433,11 +433,11 @@ evalExpr e = do
   ppConfig <- getPrettyPrinterConfig
   let val = evalFully program e
   putReplStrLn"Parsed input as:"
-  liftIO $ exprToStringANSI ppConfig e
+  liftIO $ docToTerminal $ exprToMyDoc ppConfig e
   putReplStrLn "Evaluates to:"
   liftIO $ case val of
     Nothing -> putStrLn "evalFully failed, returning Nothing"
-    Just val' -> exprToStringANSI ppConfig val'
+    Just val' -> docToTerminal $ exprToMyDoc ppConfig val'
 
 --------------------------------------------------------------------------------
 -- Tab Completion

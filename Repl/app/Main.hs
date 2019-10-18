@@ -455,7 +455,8 @@ completer = Prefix cmdCompleter prefixCompleters
       , (":constructorize", constructorizeCompleter)
       , (":set", setCompleter)
       , (":unset", setCompleter)
-      , (":load", loadCompleter)
+      --  , (":load", loadCompleter)
+      , (":load", fileCompleter)
       ]
 
 mkWordCompleter :: Monad m =>  (String -> m [Completion]) -> CompletionFunc m
@@ -474,10 +475,12 @@ loadCompleter = mkWordCompleter getLoadCompletions
   where
     getLoadCompletions s = do
       directoryContents <- liftIO $ getCurrentDirectory >>= getDirectoryContents
+      filteredDirs <-liftIO $ filterM doesDirectoryExist directoryContents
       filtered <-liftIO $  filterM doesFileExist directoryContents
       let filtered' = filter (".ub" `isSuffixOf`) filtered
       let filtered'' = filter (isPrefixOf s) filtered'
-      return $ fmap simpleCompletion filtered''
+      return $ fmap simpleCompletion (filtered'' ++ filteredDirs)
+      return $ fmap simpleCompletion filteredDirs
 
 -- | Completes ":destructorize" commands with available datatypes.
 destructorizeCompleter :: CompletionFunc InnerRepl

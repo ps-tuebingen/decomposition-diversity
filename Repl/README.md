@@ -11,12 +11,12 @@ Use the `Makefile` in the parent directory.
 The REPL can be run via `stack exec Repl`.
 Help is available by typing `:help` inside the REPL.
 
-Typing `:load <filename>` will load the program in the given file inside the REPL and typecheck it.
-Example files are located in the `examples/` directory.
-The last-used file can be reloaded with `:reload`.
-To print the current program, type `:showprogram`.
-Writing an expression which is valid within the currently loaded program will evaluate this expression.
-Alternatively, you can evaluate an expression `<expr>` for `<n>` steps by using `:step <n> <expr>`.
+- Typing `:load <filename>` will load the program in the given file inside the REPL and typecheck it.
+  Example files are located in the `examples/` directory.
+- The last-used file can be reloaded with `:reload`.
+- To print the current program, type `:showprogram`.
+- Writing an expression which is valid within the currently loaded program will evaluate this expression.
+  Alternatively, you can evaluate an expression `<expr>` for `<n>` steps by using `:step <n> <expr>`.
 
 _Missing:_
  - _xfunc_

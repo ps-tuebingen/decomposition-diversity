@@ -17,9 +17,10 @@ Help is available by typing `:help` inside the REPL.
 - To print the current program, type `:showprogram`.
 - Writing an expression which is valid within the currently loaded program will evaluate this expression.
   Alternatively, you can evaluate an expression `<expr>` for `<n>` steps by using `:step <n> <expr>`.
+- To constructorize the currently loaded program, type `:constructorize <x>`, where `<x>` is the codatatype to be constructorized.
+- To destructorize the currently loaded program, type `:destructorize <x>`, where `<x>` is the datatype to be destructorized.
 
 _Missing:_
- - _xfunc_
  - _declare_
  
  ### Options

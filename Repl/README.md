@@ -1,4 +1,4 @@
-# UroboroRepl
+# "Decomposition Diversity" REPL
 
 ## Extracted Haskell Code
 The Haskell files in the subdirectory `extracted` should not be modified, since they are automatically extracted from the Coq formalization.

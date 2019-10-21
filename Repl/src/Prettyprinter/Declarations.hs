@@ -77,7 +77,8 @@ functionDeclarationsToDoc prog = do
 ---------------------------------------------}
 
 -- | Select all consumer function declarations in a program.
-selectConsumerFunctionDeclarations :: Coq_program -> [(QName, [TypeName], TypeName,[(ScopedName, Coq_expr)])]
+selectConsumerFunctionDeclarations :: Coq_program
+                                   -> Either String [(QName, [TypeName], TypeName,[(ScopedName, Coq_expr)])]
 selectConsumerFunctionDeclarations prog =
     let
       cfun_sigs_g, cfun_sigs_l :: [((QName, [TypeName]), TypeName)]
@@ -94,7 +95,7 @@ selectConsumerFunctionDeclarations prog =
       cfun_decls_g = fmap (combine cfun_bods_g) cfun_sigs_g
       cfun_decls_l = fmap (combine cfun_bods_l) cfun_sigs_l
     in
-      cfun_decls_g ++ cfun_decls_l
+      return $ cfun_decls_g ++ cfun_decls_l
 
 -- | Annotate the Cases with the types of the arguments of the constructors.
 renameConsumerFunctionDeclaration1 :: Coq_skeleton
@@ -119,6 +120,12 @@ renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = do
   cases' <- sequence $ f <$> cases
   return (qn, argts, rtype, cases')
 
+collectRenamedFunctionDecls :: Coq_program -> Either String [(QName, [TypeName], TypeName, [(ScopedName, [TypeName], ExprNamed)])]
+collectRenamedFunctionDecls prog = do
+  cfunDecls <- selectConsumerFunctionDeclarations prog
+  renamedCfunDecls1 <- sequence $ renameConsumerFunctionDeclaration1 (program_skeleton prog) <$> cfunDecls
+  sequence $ renameConsumerFunctionDeclaration2 (program_skeleton prog) <$> renamedCfunDecls1
+
 -- | Prettyprint a single consumer function declaration.
 consumerFunctionDeclarationToDoc :: QName -> [TypeName] -> TypeName -> [(ScopedName, [TypeName], ExprNamed)] -> PrettyPrinter
 consumerFunctionDeclarationToDoc qn argts rtype cases = do
@@ -133,12 +140,10 @@ consumerFunctionDeclarationToDoc qn argts rtype cases = do
 -- | Prettyprint all consumer function declarations.
 consumerFunctionDeclarationsToDoc :: Coq_program -> PrettyPrinter
 consumerFunctionDeclarationsToDoc prog = do
-  let cfunDecls = selectConsumerFunctionDeclarations prog
-  let renamedCfunDecls1 = either (error "foo") id $ sequence $ renameConsumerFunctionDeclaration1 (program_skeleton prog) <$> cfunDecls
-  let renamedCfunDecls2 = either (error "foo") id $ sequence $ renameConsumerFunctionDeclaration2 (program_skeleton prog) <$> renamedCfunDecls1
-  ppRenamedCfunDecls2 <- sequence
-    ((\(qn, argts, rtype, cases) -> consumerFunctionDeclarationToDoc qn argts rtype cases) <$> renamedCfunDecls2)
-  return $ vsep ppRenamedCfunDecls2
+  let renamedCfunDecls = either (error "consumerFunctionDeclarationsToDoc") id $ collectRenamedFunctionDecls prog
+  ppRenamedCfunDecls <- sequence
+    ((\(qn, argts, rtype, cases) -> consumerFunctionDeclarationToDoc qn argts rtype cases) <$> renamedCfunDecls)
+  return $ vsep ppRenamedCfunDecls
 
 {---------------------------------------------
 -----------Prettyprint generator functions----

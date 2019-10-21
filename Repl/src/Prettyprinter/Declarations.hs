@@ -1,8 +1,6 @@
 module Prettyprinter.Declarations
   (
-    codatatypesToDoc
-  , datatypesToDoc
-  , programToDoc
+    programToDoc
   ) where
 
 import Data.List (intersperse)
@@ -11,9 +9,10 @@ import Data.Text.Prettyprint.Doc
 
 import AST
 import HaskellAST
-import Names (QName, ScopedName, TypeName, Name, unscope)
+import Names (QName, ScopedName, TypeName, Name)
 import Prettyprinter.Definitions
 import Prettyprinter.Expressions
+import Prettyprinter.XDataTypes
 import ProgramDef
 import Renamer.DeBruijnToNamed (deBruijnToNamed')
 import Renamer.CoqToDeBruijn (coqToDeBruijn, lookupArgs)
@@ -27,70 +26,6 @@ argumentListToDoc args = do
   return $ parens (hsep (intersperse comma x))
 
 {---------------------------------------------
------------Prettyprint datatypes--------------
----------------------------------------------}
-
--- | Prettyprint a single constructor.
-constructorToDoc :: (ScopedName, [TypeName]) -> PrettyPrinter
-constructorToDoc (sn, argts) = do
-  ppsn <- scopedNameToDoc sn
-  let ppargts = parens (hsep (intersperse comma (pretty <$> argts)))
-  return $ ppsn <> ppargts
-
--- | Prettyprint a single datatype declaration.
-datatypeToDoc :: TypeName -> [(ScopedName, [TypeName])] -> PrettyPrinter
-datatypeToDoc tn ctors = do
-  ppctors <- sequence (constructorToDoc <$> ctors)
-  return $
-     keyword "data" <+> typename tn <+> keyword "where" <>
-     (nest 3 (line <> vcat ppctors))
-
--- | Select the constructors in the constructorlist which match the typename.
-selectCtors :: TypeName -> Coq_ctors -> [(ScopedName, [TypeName])]
-selectCtors tn ctors =
-  let filteredCtors = filter (\(sn,_) -> fst (unscope sn) == tn) ctors in
-  filteredCtors
-
--- | Prettyprint all datatypes.
-datatypesToDoc :: Coq_dts -> Coq_ctors -> PrettyPrinter
-datatypesToDoc dts ctors = do
-  let dts' = fmap (\tn -> (tn, selectCtors tn ctors)) dts
-  ppdts' <- sequence ((\(tn, ctors) -> datatypeToDoc tn ctors) <$> dts')
-  return $ vsep ppdts'
-
-{---------------------------------------------
------------Prettyprint codatatypes------------
----------------------------------------------}
-
--- | Prettyprint a single destructor.
-destructorToDoc :: (ScopedName, [TypeName], TypeName) -> PrettyPrinter
-destructorToDoc (sn, argts, rtype) = do
-  ppsn <- scopedNameToDoc sn
-  let ppargts = parens (hsep (intersperse comma (pretty <$> argts)))
-  return $ ppsn <> ppargts <+> colon <+> typename rtype
-
--- | Prettyprint a single codatatype declaration.
-codatatypeToDoc :: TypeName -> [(ScopedName, [TypeName], TypeName)] -> PrettyPrinter
-codatatypeToDoc tn dtors = do
-  ppdtors <- sequence (destructorToDoc <$> dtors)
-  return $
-    keyword "codata" <+> typename tn <+> keyword "where" <>
-    (nest 3 (line <> vcat ppdtors))
-
--- | Select the destructors in the destructorlist which match the typename.
-selectDtors :: TypeName -> Coq_dtors -> [(ScopedName, [TypeName], TypeName)]
-selectDtors tn dtors =
-  let filteredDtors = filter (\((sn,_),_) -> fst (unscope sn) == tn) dtors in
-  (\((sn,argts),rtype) -> (sn,argts,rtype)) <$> filteredDtors
-
--- | Prettyprint all codatatypes.
-codatatypesToDoc :: Coq_cdts -> Coq_dtors -> PrettyPrinter
-codatatypesToDoc cdts dtors = do
-  let cdts' = fmap (\tn -> (tn, selectDtors tn dtors)) cdts
-  ppcdts' <- sequence ((\(tn, dtors) -> codatatypeToDoc tn dtors) <$> cdts')
-  return $ vsep ppcdts'
-
-{---------------------------------------------
 -----------Prettyprint function declarations--
 ---------------------------------------------}
 
@@ -102,14 +37,21 @@ selectFunctionDeclarations prog =
     funsigs = skeleton_fun_sigs (program_skeleton prog)
     funbods :: [(Name, Coq_expr)]
     funbods = program_fun_bods prog
+    combine ((name, argts), rtype) = ( name
+                                     , argts
+                                     , rtype
+                                     , fromMaybe (error "Could not find function body.") (lookup name funbods)
+                                     )
   in
-    (\((n, argts), rtype) -> (n, argts, rtype, fromMaybe (error "Could not find function body.") (lookup n funbods))) <$> funsigs
+    combine <$> funsigs
 
 -- | Rename the body of a function declaration into ExprNamed.
-renameFunctionDeclaration :: Coq_skeleton -> (Name, [TypeName], TypeName, Coq_expr) -> Either String (Name, [TypeName], TypeName, ExprNamed)
+renameFunctionDeclaration :: Coq_skeleton
+                          -> (Name, [TypeName], TypeName, Coq_expr)
+                          -> Either String (Name, [TypeName], TypeName, ExprNamed)
 renameFunctionDeclaration sk (n, argts, rtype, body) = do
   renamedBody <- coqToDeBruijn sk body
-  let renamedBody' = either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length argts -1)) renamedBody
+  renamedBody' <- deBruijnToNamed' (fromToNames 0 (length argts -1)) renamedBody
   return (n, argts, rtype, renamedBody')
 
 -- | Prettyprint a single function declaration.
@@ -135,7 +77,8 @@ functionDeclarationsToDoc prog = do
 ---------------------------------------------}
 
 -- | Select all consumer function declarations in a program.
-selectConsumerFunctionDeclarations :: Coq_program -> [(QName, [TypeName], TypeName,[(ScopedName, Coq_expr)])]
+selectConsumerFunctionDeclarations :: Coq_program
+                                   -> Either String [(QName, [TypeName], TypeName,[(ScopedName, Coq_expr)])]
 selectConsumerFunctionDeclarations prog =
     let
       cfun_sigs_g, cfun_sigs_l :: [((QName, [TypeName]), TypeName)]
@@ -144,39 +87,44 @@ selectConsumerFunctionDeclarations prog =
       cfun_bods_g, cfun_bods_l :: [(QName, [(ScopedName, Coq_expr)])]
       cfun_bods_g = program_cfun_bods_g prog
       cfun_bods_l = program_cfun_bods_l prog
+      combine bods ((qn, argts), rtype) = ( qn
+                                    , argts
+                                    , rtype
+                                    , fromMaybe (error "Could not find consumer function body.") (lookup qn bods))
       cfun_decls_g, cfun_decls_l :: [(QName, [TypeName], TypeName,[(ScopedName, Coq_expr)])]
-      cfun_decls_g =
-        fmap
-         (\((qn, argts), rtype) ->
-            (qn, argts, rtype, fromMaybe (error "Could not find consumer function body.") (lookup qn cfun_bods_g)))
-         cfun_sigs_g
-      cfun_decls_l =
-        fmap
-         (\((qn, argts), rtype) ->
-            (qn, argts, rtype, fromMaybe (error "Could not find consumer function body.") (lookup qn cfun_bods_l)))
-         cfun_sigs_l
+      cfun_decls_g = fmap (combine cfun_bods_g) cfun_sigs_g
+      cfun_decls_l = fmap (combine cfun_bods_l) cfun_sigs_l
     in
-      cfun_decls_g ++ cfun_decls_l
+      return $ cfun_decls_g ++ cfun_decls_l
 
 -- | Annotate the Cases with the types of the arguments of the constructors.
 renameConsumerFunctionDeclaration1 :: Coq_skeleton
                                    -> (QName, [TypeName], TypeName, [(ScopedName, Coq_expr)])
-                                   -> (QName, [TypeName], TypeName, [(ScopedName, [TypeName], Coq_expr)])
-renameConsumerFunctionDeclaration1 sk (qn, argts, rtype, cases) = (qn, argts, rtype, cases')
-  where
-    cases' = (\(sn,e) -> (sn, either (error "renameConsumerFunctionDeclaration") id $ lookupArgs sn sk, e)) <$> cases
+                                   -> Either String (QName, [TypeName], TypeName, [(ScopedName, [TypeName], Coq_expr)])
+renameConsumerFunctionDeclaration1 sk (qn, argts, rtype, cases) = do
+    let f (sn, e) = do
+          args <- lookupArgs sn sk
+          return (sn, args, e)
+    cases' <- sequence $ f <$> cases
+    return (qn, argts, rtype, cases')
 
 -- | Rename the body inside the cases into ExprNamed.
 renameConsumerFunctionDeclaration2 :: Coq_skeleton
                                    -> (QName, [TypeName], TypeName, [(ScopedName, [TypeName], Coq_expr)])
-                                   -> (QName, [TypeName], TypeName, [(ScopedName, [TypeName], ExprNamed)])
-renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = (qn, argts, rtype, cases')
-  where
-    cases' =
-      fmap
-      (\(sn,argts',e) ->
-          (sn, argts', either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
-      cases
+                                   -> Either String (QName, [TypeName], TypeName, [(ScopedName, [TypeName], ExprNamed)])
+renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = do
+  let f (sn, argts', e) = do
+        eDB <- coqToDeBruijn sk e
+        eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) eDB
+        return (sn, fromToNames (length argts) (length (argts ++ argts')), eN)
+  cases' <- sequence $ f <$> cases
+  return (qn, argts, rtype, cases')
+
+collectRenamedFunctionDecls :: Coq_program -> Either String [(QName, [TypeName], TypeName, [(ScopedName, [TypeName], ExprNamed)])]
+collectRenamedFunctionDecls prog = do
+  cfunDecls <- selectConsumerFunctionDeclarations prog
+  renamedCfunDecls1 <- sequence $ renameConsumerFunctionDeclaration1 (program_skeleton prog) <$> cfunDecls
+  sequence $ renameConsumerFunctionDeclaration2 (program_skeleton prog) <$> renamedCfunDecls1
 
 -- | Prettyprint a single consumer function declaration.
 consumerFunctionDeclarationToDoc :: QName -> [TypeName] -> TypeName -> [(ScopedName, [TypeName], ExprNamed)] -> PrettyPrinter
@@ -192,12 +140,10 @@ consumerFunctionDeclarationToDoc qn argts rtype cases = do
 -- | Prettyprint all consumer function declarations.
 consumerFunctionDeclarationsToDoc :: Coq_program -> PrettyPrinter
 consumerFunctionDeclarationsToDoc prog = do
-  let cfunDecls = selectConsumerFunctionDeclarations prog
-  let renamedCfunDecls1 = renameConsumerFunctionDeclaration1 (program_skeleton prog) <$> cfunDecls
-  let renamedCfunDecls2 = renameConsumerFunctionDeclaration2 (program_skeleton prog) <$> renamedCfunDecls1
-  ppRenamedCfunDecls2 <- sequence
-    ((\(qn, argts, rtype, cases) -> consumerFunctionDeclarationToDoc qn argts rtype cases) <$> renamedCfunDecls2)
-  return $ vsep ppRenamedCfunDecls2
+  let renamedCfunDecls = either (error "consumerFunctionDeclarationsToDoc") id $ collectRenamedFunctionDecls prog
+  ppRenamedCfunDecls <- sequence
+    ((\(qn, argts, rtype, cases) -> consumerFunctionDeclarationToDoc qn argts rtype cases) <$> renamedCfunDecls)
+  return $ vsep ppRenamedCfunDecls
 
 {---------------------------------------------
 -----------Prettyprint generator functions----
@@ -213,39 +159,38 @@ selectGeneratorFunctionDeclarations prog =
       gfun_bods_g, gfun_bods_l :: [(QName, [(ScopedName, Coq_expr)])]
       gfun_bods_g = program_gfun_bods_g prog
       gfun_bods_l = program_gfun_bods_l prog
+      combine bods (qn, argts) = ( qn
+                                 , argts
+                                 , fromMaybe (error "Could not find consumer function body.") (lookup qn bods)
+                                 )
       gfun_decls_g, gfun_decls_l :: [(QName, [TypeName],[(ScopedName, Coq_expr)])]
-      gfun_decls_g =
-        fmap
-         (\(qn, argts) ->
-            (qn, argts, fromMaybe (error "Could not find consumer function body.") (lookup qn gfun_bods_g)))
-         gfun_sigs_g
-      gfun_decls_l =
-        fmap
-         (\(qn, argts) ->
-            (qn, argts, fromMaybe (error "Could not find consumer function body.") (lookup qn gfun_bods_l)))
-         gfun_sigs_l
+      gfun_decls_g = fmap (combine gfun_bods_g) gfun_sigs_g
+      gfun_decls_l = fmap (combine gfun_bods_l) gfun_sigs_l
     in
       gfun_decls_g ++ gfun_decls_l
 
 -- | Annotate the Cocases with the types of the arguments of the destructors.
 renameGeneratorFunctionDeclaration1 :: Coq_skeleton
                                    -> (QName, [TypeName], [(ScopedName, Coq_expr)])
-                                   -> (QName, [TypeName], [(ScopedName, [TypeName], Coq_expr)])
-renameGeneratorFunctionDeclaration1 sk (qn, argts, cases) = (qn, argts, cases')
-  where
-    cases' = (\(sn,e) -> (sn, either (error "foo") id $ lookupArgs sn sk, e)) <$> cases
+                                   -> Either String (QName, [TypeName], [(ScopedName, [TypeName], Coq_expr)])
+renameGeneratorFunctionDeclaration1 sk (qn, argts, cases) = do
+  let lookupArgs' (sn, e) = do
+        args <- lookupArgs sn sk
+        return (sn, args, e)
+  cases' <- sequence $ lookupArgs' <$> cases
+  return (qn, argts, cases')
 
 -- | Rename the body inside the cocases into ExprNamed.
 renameGeneratorFunctionDeclaration2 :: Coq_skeleton
                                    -> (QName, [TypeName], [(ScopedName, [TypeName], Coq_expr)])
-                                   -> (QName, [TypeName], [(ScopedName, [TypeName], ExprNamed)])
-renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = (qn, argts, cases')
-  where
-    cases' =
-      fmap
-      (\(sn,argts',e) ->
-          (sn, argts', either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e)))
-      cases
+                                   -> Either String (QName, [TypeName], [(ScopedName, [TypeName], ExprNamed)])
+renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = do
+  let f (sn,argts', e) = do
+        eDB <- coqToDeBruijn sk e
+        eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) eDB
+        return (sn, fromToNames (length argts) (length (argts ++ argts')), eN)
+  cases' <- sequence $ f <$> cases
+  return (qn, argts, cases')
 
 -- | Prettyprint a single generator function declaration.
 generatorFunctionDeclarationToDoc :: QName -> [TypeName] -> [(ScopedName, [TypeName], ExprNamed)] -> PrettyPrinter
@@ -261,8 +206,8 @@ generatorFunctionDeclarationToDoc qn argts cocases = do
 generatorFunctionDeclarationsToDoc :: Coq_program -> PrettyPrinter
 generatorFunctionDeclarationsToDoc prog = do
   let gfunDecls = selectGeneratorFunctionDeclarations prog
-  let renamedGfunDecls1 = renameGeneratorFunctionDeclaration1 (program_skeleton prog) <$> gfunDecls
-  let renamedGfunDecls2 = renameGeneratorFunctionDeclaration2 (program_skeleton prog) <$> renamedGfunDecls1
+  let renamedGfunDecls1 = either (error "foo") id $ sequence $ renameGeneratorFunctionDeclaration1 (program_skeleton prog) <$> gfunDecls
+  let renamedGfunDecls2 = either (error "foo") id $ sequence $ renameGeneratorFunctionDeclaration2 (program_skeleton prog) <$> renamedGfunDecls1
   ppRenamedGfunDecls2 <- sequence
     ((\(qn, argts, cocases) -> generatorFunctionDeclarationToDoc qn argts cocases) <$> renamedGfunDecls2)
   return $ vsep ppRenamedGfunDecls2

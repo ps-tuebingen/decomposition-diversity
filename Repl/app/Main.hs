@@ -4,12 +4,11 @@ module Main where
 import System.Exit (exitSuccess)
 import System.Console.Repline
 import System.Console.Haskeline
-import System.Directory
-import Control.Monad (filterM,when)
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Except (lift)
-import Data.List (isPrefixOf, isSuffixOf)
+import Data.List (isPrefixOf)
 import Data.Default
 import           Data.Maybe                     ( fromMaybe )
 import Text.Read (readMaybe)

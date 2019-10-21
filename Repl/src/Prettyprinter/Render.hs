@@ -19,6 +19,7 @@ import AST
 import Prettyprinter.Definitions
 import Prettyprinter.Expressions
 import Prettyprinter.Declarations
+import Prettyprinter.XDataTypes
 import ProgramDef
 import Renamer.DeBruijnToNamed (deBruijnToNamed)
 import Renamer.CoqToDeBruijn (coqToDeBruijn)

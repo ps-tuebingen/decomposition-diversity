@@ -2,6 +2,7 @@ module Parser.Declarations
   (
     Declaration(..)
   , declarationsP
+  , declarationP
   ) where
 
 import Text.Megaparsec ((<|>), sepBy, try)

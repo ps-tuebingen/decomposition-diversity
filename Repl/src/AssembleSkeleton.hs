@@ -1,6 +1,7 @@
 module AssembleSkeleton
   (
     assembleSkeleton
+  , addDeclarationToSkeleton
   ) where
 
 import Names (TypeName, ScopedName, QName, Name)

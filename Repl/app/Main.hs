@@ -12,6 +12,7 @@ import Data.List (isPrefixOf)
 import Data.Default
 import           Data.Maybe                     ( fromMaybe )
 import Text.Read (readMaybe)
+import           Text.Megaparsec.Char           ( eol )
 import System.IO.Error(tryIOError)
 import Control.Monad.Trans
 
@@ -31,7 +32,10 @@ import LiftMatch
 import InlineComatch
 import InlineOrderGfuns
 import DtorizeIII
+import AssembleProgram (addDeclToProgram)
 import Parser.Combined (parseExpression, parseProgram)
+import Parser.Definitions (parseInput)
+import Parser.Declarations (declarationP)
 
 --------------------------------------------------------------------------------
 -- The Repl Monad
@@ -126,6 +130,7 @@ options = [
   , ("reload",          reload)
   , ("multiline",       multiline)
   , ("{",               multiline)
+  , ("declare",         declare)
   , ("}",               endMultiline)
   , ("step",            stepCmd)
   , ("set",             set)
@@ -197,7 +202,11 @@ constructorize :: [String] -> Repl ()
 constructorize [] = execIfInNormalMode $ putReplStrLn "Constructorize needs at least one codatatype parameter"
 constructorize (arg:_) = execIfInNormalMode $ do
   loadedProg <- extractFromReplState currentProgram
-  let newProg = constructorizeProg arg loadedProg
+  constructorize' arg loadedProg
+
+constructorize' :: String -> Coq_program -> Repl ()
+constructorize' arg prog = do
+  let newProg = constructorizeProg arg prog
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
   putReplStrLn "Successfully constructorized program!"
 
@@ -215,7 +224,11 @@ destructorize :: [String] -> Repl ()
 destructorize [] = execIfInNormalMode $ putReplStrLn "Destructorize needs at least one datatype parameter"
 destructorize (arg:_) = execIfInNormalMode $ do
   loadedProg <- extractFromReplState currentProgram
-  let newProg = destructorizeProg arg loadedProg
+  destructorize' arg loadedProg
+
+destructorize' :: String -> Coq_program -> Repl ()
+destructorize' arg prog = do
+  let newProg = destructorizeProg arg prog
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
   putReplStrLn "Successfully destructorized program!"
 
@@ -232,14 +245,8 @@ transpose (arg:_) = execIfInNormalMode $ do
   dts <- lift getDatatypes
   cdts <- lift getCodatatypes
   case (arg `elem` dts, arg `elem` cdts) of
-    (True, _) -> do
-        let newProg = destructorizeProg arg loadedProg
-        lift $ modify $ \replState -> (replState {currentProgram =  newProg})
-        putReplStrLn "Successfully destructorized program!"
-    (False, True) -> do
-        let newProg = constructorizeProg arg loadedProg
-        lift $ modify $ \replState -> (replState {currentProgram =  newProg})
-        putReplStrLn "Successfully constructorized program!"
+    (True, _) -> destructorize' arg loadedProg
+    (False, True) -> constructorize' arg loadedProg
     _ -> putReplStrLn $ "Transposing program with type " ++ arg ++ " failed"
 
 --------------------------------------------------------------------------------
@@ -258,22 +265,26 @@ load (filepath:_) = execIfInNormalMode $ do
     Just progstr ->
         case parseProgram progstr of
           Left err -> putReplStrLn $ "Failed at parsing the file:\n" ++ err
-          Right parsedProg -> do
-            let tc_errors = typecheckProgram parsedProg
-            case tc_errors of
-              (([],[]),[]) -> do
-                lift $ modify $ \replState -> replState {currentProgram = parsedProg, lastLoadedFile = Just filepath}
-                putReplStrLn "Successfully loaded program"
-              ((ferrs, gfunerrs), cfunerrs) -> do
-                if null ferrs then return () else do
-                  putReplStrLn $ "Could not typecheck the following functions: "
-                  mapM_ putReplStrLn ferrs
-                if null gfunerrs then return () else do
-                  putReplStrLn $ "Could not typecheck the following generator functions: "
-                  mapM_ putReplStrLn gfunerrs
-                if null cfunerrs then return () else do
-                  putReplStrLn $ "Could not typecheck the following consumer functions: "
-                  mapM_ putReplStrLn cfunerrs
+          Right parsedProg -> typecheckAndLoad filepath parsedProg
+
+
+typecheckAndLoad :: FilePath -> Coq_program -> Repl ()
+typecheckAndLoad filepath prog =
+    let tc_errors = typecheckProgram prog in
+    case tc_errors of
+        (([],[]),[]) -> do
+            lift $ modify $ \replState -> replState {currentProgram = prog, lastLoadedFile = Just filepath}
+            putReplStrLn "Successfully loaded program"
+        ((ferrs, gfunerrs), cfunerrs) -> do
+            if null ferrs then return () else do
+                putReplStrLn "Could not typecheck the following functions: "
+                mapM_ putReplStrLn ferrs
+            if null gfunerrs then return () else do
+                putReplStrLn "Could not typecheck the following generator functions: "
+                mapM_ putReplStrLn gfunerrs
+            if null cfunerrs then return () else do
+                putReplStrLn "Could not typecheck the following consumer functions: "
+                mapM_ putReplStrLn cfunerrs
 
 --------------------------------------------------------------------------------
 -- :reload
@@ -301,7 +312,7 @@ reload _ = execIfInNormalMode $ do
 --------------------------------------------------------------------------------
 -- :multiline
 --
--- Add a declaration to the program. Starts multiline declaration mode.
+-- Starts multiline expression mode.
 --------------------------------------------------------------------------------
 
 multiline :: [String] -> Repl ()
@@ -314,7 +325,17 @@ endMultiline _ = do
   case mode of
     NormalMode -> putReplStrLn ":} : Not in MultilineExprMode"
     MultilineExprMode akk -> cmdMultilineExprMode akk ":}"
-    MultilineDeclarationMode akk ->  putReplStrLn ":} : Not in MultilineExprMode"
+    MultilineDeclarationMode akk -> cmdMultilineDeclMode akk ":}"
+
+--------------------------------------------------------------------------------
+-- :declare
+--
+-- Add a declaration to the program. Starts multiline declaration mode.
+--------------------------------------------------------------------------------
+
+declare :: [String] -> Repl ()
+declare _ = execIfInNormalMode $
+  modifyReplState (\st -> st { commandMode = MultilineDeclarationMode "" })
 
 --------------------------------------------------------------------------------
 -- :step
@@ -446,15 +467,32 @@ evalMultilineExpr multilineExpr = do
 -- | Decide whether multiline input is finished, or whether input should be appended to
 -- accumulated multiline input.
 cmdMultilineDeclMode :: String -> String -> Repl ()
-cmdMultilineDeclMode akk ";" = do
-  modifyReplState (\st -> st { commandMode = NormalMode })
-  evalMultilineDecl akk
-cmdMultilineDeclMode akk input  =
-  modifyReplState (\st -> st { commandMode = MultilineDeclarationMode (akk ++ "\n" ++ input) })
+cmdMultilineDeclMode akk input
+    | input == ";" || input == ":}" = do
+        modifyReplState (\st -> st { commandMode = NormalMode })
+        evalMultilineDecl (akk ++ "\n")
+    | otherwise =
+        modifyReplState (\st -> st { commandMode = MultilineDeclarationMode (akk ++ "\n" ++ input) })
 
 -- | Process the accumulated and finished multiline declaration input.
 evalMultilineDecl :: String -> Repl ()
-evalMultilineDecl = putReplStrLn
+evalMultilineDecl multilineExpr = do
+  program <- extractFromReplState currentProgram
+  filepath <- fromMaybe "" <$> extractFromReplState lastLoadedFile
+  let tryParse = parseInput (eol *> declarationP) multilineExpr
+  case tryParse of
+    Left err -> do
+      putReplStrLn "Error while parsing multiline expression:"
+      putReplStrLn err
+      modifyReplState (\st -> st { commandMode = NormalMode })
+    Right decl ->
+        case addDeclToProgram decl program of
+            Left err -> do
+                putReplStrLn "Error while parsing multiline expression:"
+                putReplStrLn err
+                modifyReplState (\st -> st { commandMode = NormalMode })
+            Right prog ->
+                typecheckAndLoad filepath prog
 
 evalFully :: Coq_program -> Coq_expr -> Maybe Coq_expr
 evalFully p e

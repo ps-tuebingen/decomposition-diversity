@@ -20,6 +20,10 @@ Help is available by typing `:help` inside the REPL.
   In the expression, you may also write numerals for values of type `Nat` (when such a type exists and represents the usual Peano numbers).
   Additionally, :{ or :multiline will start a multiline mode, which allows writing an expression spanning multiple lines.
   To end the input, write :} in a separate new line.
+- To add a declaration to the program, use :declare.
+  This will start multiline mode, which can be used to define a new declaration to be added to the program.
+  To end the input, write :} in a separate new line.
+  Afterwards, the new program is typechecked. If this succeeds, the loaded program is updated.
 - To constructorize the currently loaded program, type `:constructorize <x>`, where `<x>` is the codatatype to be constructorized.
 - To destructorize the currently loaded program, type `:destructorize <x>`, where `<x>` is the datatype to be destructorized.
 - To transpose the currently loaded program, type `:transpose <x>`, where `<x>` is the xDatatype to be transpose.

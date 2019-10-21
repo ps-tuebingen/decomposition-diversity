@@ -1,6 +1,7 @@
 module AssembleProgram
   (
     assembleProgram
+  , addDeclToProgram
   ) where
 
 import Names (ScopedName, QName, Name)
@@ -13,6 +14,7 @@ import Renamer.ParsedToNamed (parsedToNamed)
 import Renamer.NamedToDeBruijn (namedToDeBruijn')
 import Renamer.DeBruijnToCoq (deBruijnToCoq)
 import Data.Foldable (foldrM)
+import Skeleton
 import AssembleSkeleton
 
 
@@ -39,6 +41,10 @@ type ConFunBod = (QName, [(ScopedName, Coq_expr)])
 addConFunToProgram :: ConFunBod -> Coq_program -> Coq_program
 addConFunToProgram cfbod (Coq_mkProgram skel fun_bods          cfun_bods_g  cfun_bods_l gfun_bods_g gfun_bods_l) =
                          (Coq_mkProgram skel fun_bods (cfbod : cfun_bods_g) cfun_bods_l gfun_bods_g gfun_bods_l)
+
+modifySkeleton :: (Coq_skeleton -> Coq_skeleton) -> Coq_program -> Coq_program
+modifySkeleton f (Coq_mkProgram skel fun_bods cfun_bods_g cfun_bods_l gfun_bods_g gfun_bods_l) =
+     (Coq_mkProgram (f skel) fun_bods cfun_bods_g cfun_bods_l gfun_bods_g gfun_bods_l)
 
 assembleProgramHelper :: Declaration -> Coq_program -> AssembleM Coq_program
 assembleProgramHelper (FunctionD (FNameParse fname) fargs _ ex) pr = do
@@ -87,3 +93,8 @@ assembleProgram decls =
 
 unmapVarNameParse :: [VarNameParse] -> [String]
 unmapVarNameParse = fmap (\(VarNameParse tn) -> tn)
+
+addDeclToProgram :: Declaration -> Coq_program -> Either String Coq_program
+addDeclToProgram d p = do
+    p' <- assembleProgramHelper d p
+    return (modifySkeleton (addDeclarationToSkeleton d) p')

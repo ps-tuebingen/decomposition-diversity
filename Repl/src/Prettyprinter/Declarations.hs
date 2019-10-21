@@ -167,22 +167,25 @@ selectGeneratorFunctionDeclarations prog =
 -- | Annotate the Cocases with the types of the arguments of the destructors.
 renameGeneratorFunctionDeclaration1 :: Coq_skeleton
                                    -> (QName, [TypeName], [(ScopedName, Coq_expr)])
-                                   -> (QName, [TypeName], [(ScopedName, [TypeName], Coq_expr)])
-renameGeneratorFunctionDeclaration1 sk (qn, argts, cases) = (qn, argts, cases')
-  where
-    f (sn,e) = (sn, either (error "foo") id $ lookupArgs sn sk, e)
-    cases' = f <$> cases
+                                   -> Either String (QName, [TypeName], [(ScopedName, [TypeName], Coq_expr)])
+renameGeneratorFunctionDeclaration1 sk (qn, argts, cases) = do
+  let lookupArgs' (sn, e) = do
+        args <- lookupArgs sn sk
+        return (sn, args, e)
+  cases' <- sequence $ lookupArgs' <$> cases
+  return (qn, argts, cases')
 
 -- | Rename the body inside the cocases into ExprNamed.
 renameGeneratorFunctionDeclaration2 :: Coq_skeleton
                                    -> (QName, [TypeName], [(ScopedName, [TypeName], Coq_expr)])
-                                   -> (QName, [TypeName], [(ScopedName, [TypeName], ExprNamed)])
-renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = (qn, argts, cases')
-  where
-    f (sn,argts', e) = ( sn
-                       , argts'
-                       , either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e))
-    cases' = f <$> cases
+                                   -> Either String (QName, [TypeName], [(ScopedName, [TypeName], ExprNamed)])
+renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = do
+  let f (sn,argts', e) = do
+        eDB <- coqToDeBruijn sk e
+        eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) eDB
+        return (sn, argts', eN)
+  cases' <- sequence $ f <$> cases
+  return (qn, argts, cases')
 
 -- | Prettyprint a single generator function declaration.
 generatorFunctionDeclarationToDoc :: QName -> [TypeName] -> [(ScopedName, [TypeName], ExprNamed)] -> PrettyPrinter
@@ -198,8 +201,8 @@ generatorFunctionDeclarationToDoc qn argts cocases = do
 generatorFunctionDeclarationsToDoc :: Coq_program -> PrettyPrinter
 generatorFunctionDeclarationsToDoc prog = do
   let gfunDecls = selectGeneratorFunctionDeclarations prog
-  let renamedGfunDecls1 = renameGeneratorFunctionDeclaration1 (program_skeleton prog) <$> gfunDecls
-  let renamedGfunDecls2 = renameGeneratorFunctionDeclaration2 (program_skeleton prog) <$> renamedGfunDecls1
+  let renamedGfunDecls1 = either (error "foo") id $ sequence $ renameGeneratorFunctionDeclaration1 (program_skeleton prog) <$> gfunDecls
+  let renamedGfunDecls2 = either (error "foo") id $ sequence $ renameGeneratorFunctionDeclaration2 (program_skeleton prog) <$> renamedGfunDecls1
   ppRenamedGfunDecls2 <- sequence
     ((\(qn, argts, cocases) -> generatorFunctionDeclarationToDoc qn argts cocases) <$> renamedGfunDecls2)
   return $ vsep ppRenamedGfunDecls2

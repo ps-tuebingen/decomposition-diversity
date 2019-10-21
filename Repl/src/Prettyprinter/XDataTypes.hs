@@ -4,17 +4,11 @@ module Prettyprinter.XDataTypes
   ) where
 
 import Data.List (intersperse)
-import Data.Maybe (fromMaybe)
 import Data.Text.Prettyprint.Doc
 
-import AST
-import HaskellAST
-import Names (QName, ScopedName, TypeName, Name, unscope)
+import Names (ScopedName, TypeName, unscope)
 import Prettyprinter.Definitions
 import Prettyprinter.Expressions
-import ProgramDef
-import Renamer.DeBruijnToNamed (deBruijnToNamed')
-import Renamer.CoqToDeBruijn (coqToDeBruijn, lookupArgs)
 import Skeleton
 
 {---------------------------------------------

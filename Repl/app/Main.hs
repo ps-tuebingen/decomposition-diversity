@@ -125,7 +125,9 @@ options = [
   , ("transpose",       transpose)
   , ("load",            load)
   , ("reload",          reload)
-  , ("declare",         declare)
+  , ("multiline",       multiline)
+  , ("{",               multiline)
+  , ("}",               endMultiline)
   , ("step",            stepCmd)
   , ("set",             set)
   , ("unset",           unset)
@@ -138,24 +140,26 @@ options = [
 --------------------------------------------------------------------------------
 
 help :: [String] -> Repl ()
-help _ = putReplStrLn $
-  "Commands available from the prompt: \n\n" ++
-  "<expression>            evaluate the expression\n" ++
-  ":help                   display this list of commands\n" ++
-  ":quit                   exit the repl\n" ++
-  ":showprogram            show all declarations\n" ++
-  ":constructorize <x>     constructorize the current program\n" ++
-  ":destructorize <x>      destructorize the current program\n" ++
-  ":load <filename>        load program from file\n" ++
-  ":reload                 reload last sucessfully loaded program\n" ++
-  ":declare                add a declaration to the program\n" ++
-  ":step <n> <expr>       evaluate n steps of expressions in context of the loaded program\n" ++
-  "\n --- Pretty printing options ---\n" ++
-  ":set / :unset [option]  enable / disable prettyprinting option\n" ++
-  "Options:\n" ++
-  " - printNat             print values of Nat as numerals\n" ++
-  " - printDeBruijn        print variables with their deBruijn Index (Debug mode)\n" ++
-  " - printQualifiedNames  print ctors/dtors with their qualified names\n"
+help _ = putReplStrLn $ unlines [
+  "Commands available from the prompt: \n",
+  "<expression>            evaluate the expression",
+  ":help                   display this list of commands",
+  ":quit                   exit the repl",
+  ":showprogram            show all declarations",
+  ":constructorize <x>     constructorize the current program",
+  ":destructorize <x>      destructorize the current program",
+  ":load <filename>        load program from file",
+  ":reload                 reload last sucessfully loaded program",
+  ":multiline              start multiline mode to enter expressions spanning multiple lines (like matches)",
+  ":{                      start multiline mode (see :multiline)",
+  ":step <n> <expr>       evaluate n steps of expressions in context of the loaded program",
+  "\n --- Pretty printing options ---",
+  ":set / :unset [option]  enable / disable prettyprinting option",
+  "Options:",
+  " - printNat             print values of Nat as numerals",
+  " - printDeBruijn        print variables with their deBruijn Index (Debug mode)",
+  " - printQualifiedNames  print ctors/dtors with their qualified names"
+  ]
 
 --------------------------------------------------------------------------------
 -- :quit
@@ -296,14 +300,22 @@ reload _ = execIfInNormalMode $ do
               putReplStrLn "Successfully reloaded program"
 
 --------------------------------------------------------------------------------
--- :declare
+-- :multiline
 --
 -- Add a declaration to the program. Starts multiline declaration mode.
 --------------------------------------------------------------------------------
 
-declare :: [String] -> Repl ()
-declare _ = execIfInNormalMode $
-  modifyReplState (\st -> st { commandMode = MultilineDeclarationMode "" })
+multiline :: [String] -> Repl ()
+multiline _ = execIfInNormalMode $
+  modifyReplState (\st -> st { commandMode = MultilineExprMode "" })
+
+endMultiline :: [String] -> Repl ()
+endMultiline _ = do
+  mode <- getCommandMode
+  case mode of
+    NormalMode -> putReplStrLn ":} : Not in MultilineExprMode"
+    MultilineExprMode akk -> cmdMultilineExprMode akk ":}"
+    MultilineDeclarationMode akk ->  putReplStrLn ":} : Not in MultilineExprMode"
 
 --------------------------------------------------------------------------------
 -- :step
@@ -413,11 +425,12 @@ cmdNormalMode input = do
 -- | Decide whether multiline input is finished, or whether input should be appended to
 -- accumulated multiline input.
 cmdMultilineExprMode :: String -> String -> Repl ()
-cmdMultilineExprMode akk ";" = do
-  modifyReplState (\st -> st { commandMode = NormalMode })
-  evalMultilineExpr akk
-cmdMultilineExprMode akk input =
-  modifyReplState (\st -> st { commandMode = MultilineExprMode (akk ++ "\n" ++ input) })
+cmdMultilineExprMode akk input 
+    | input == ";" || input == ":}" = do
+        modifyReplState (\st -> st { commandMode = NormalMode })
+        evalMultilineExpr akk
+    | otherwise =
+        modifyReplState (\st -> st { commandMode = MultilineExprMode (akk ++ "\n" ++ input) })
 
 -- | Process the accumulated and finished multiline expression input.
 evalMultilineExpr :: String -> Repl ()

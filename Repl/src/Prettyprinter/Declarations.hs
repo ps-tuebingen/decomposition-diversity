@@ -99,25 +99,25 @@ selectConsumerFunctionDeclarations prog =
 -- | Annotate the Cases with the types of the arguments of the constructors.
 renameConsumerFunctionDeclaration1 :: Coq_skeleton
                                    -> (QName, [TypeName], TypeName, [(ScopedName, Coq_expr)])
-                                   -> (QName, [TypeName], TypeName, [(ScopedName, [TypeName], Coq_expr)])
-renameConsumerFunctionDeclaration1 sk (qn, argts, rtype, cases) = (qn, argts, rtype, cases')
-  where
-    f (sn, e) = ( sn
-                , either (error "renameConsumerFunctionDeclaration") id $ lookupArgs sn sk
-                , e
-                )
-    cases' = f <$> cases
+                                   -> Either String (QName, [TypeName], TypeName, [(ScopedName, [TypeName], Coq_expr)])
+renameConsumerFunctionDeclaration1 sk (qn, argts, rtype, cases) = do
+    let f (sn, e) = do
+          args <- lookupArgs sn sk
+          return (sn, args, e)
+    cases' <- sequence $ f <$> cases
+    return (qn, argts, rtype, cases')
 
 -- | Rename the body inside the cases into ExprNamed.
 renameConsumerFunctionDeclaration2 :: Coq_skeleton
                                    -> (QName, [TypeName], TypeName, [(ScopedName, [TypeName], Coq_expr)])
-                                   -> (QName, [TypeName], TypeName, [(ScopedName, [TypeName], ExprNamed)])
-renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = (qn, argts, rtype, cases')
-  where
-    f (sn, argts', e) = ( sn
-                        , argts'
-                        , either (error "foo") id $ deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) (either (error "foo") id $ coqToDeBruijn sk e))
-    cases' = fmap f cases
+                                   -> Either String (QName, [TypeName], TypeName, [(ScopedName, [TypeName], ExprNamed)])
+renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = do
+  let f (sn, argts', e) = do
+        eDB <- coqToDeBruijn sk e
+        eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) eDB
+        return (sn, argts', eN)
+  cases' <- sequence $ f <$> cases
+  return (qn, argts, rtype, cases')
 
 -- | Prettyprint a single consumer function declaration.
 consumerFunctionDeclarationToDoc :: QName -> [TypeName] -> TypeName -> [(ScopedName, [TypeName], ExprNamed)] -> PrettyPrinter
@@ -134,8 +134,8 @@ consumerFunctionDeclarationToDoc qn argts rtype cases = do
 consumerFunctionDeclarationsToDoc :: Coq_program -> PrettyPrinter
 consumerFunctionDeclarationsToDoc prog = do
   let cfunDecls = selectConsumerFunctionDeclarations prog
-  let renamedCfunDecls1 = renameConsumerFunctionDeclaration1 (program_skeleton prog) <$> cfunDecls
-  let renamedCfunDecls2 = renameConsumerFunctionDeclaration2 (program_skeleton prog) <$> renamedCfunDecls1
+  let renamedCfunDecls1 = either (error "foo") id $ sequence $ renameConsumerFunctionDeclaration1 (program_skeleton prog) <$> cfunDecls
+  let renamedCfunDecls2 = either (error "foo") id $ sequence $ renameConsumerFunctionDeclaration2 (program_skeleton prog) <$> renamedCfunDecls1
   ppRenamedCfunDecls2 <- sequence
     ((\(qn, argts, rtype, cases) -> consumerFunctionDeclarationToDoc qn argts rtype cases) <$> renamedCfunDecls2)
   return $ vsep ppRenamedCfunDecls2

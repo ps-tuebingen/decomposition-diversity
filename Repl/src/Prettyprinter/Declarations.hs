@@ -116,7 +116,7 @@ renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = do
   let f (sn, argts', e) = do
         eDB <- coqToDeBruijn sk e
         eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) eDB
-        return (sn, argts', eN)
+        return (sn, fromToNames (length argts) (length (argts ++ argts')), eN)
   cases' <- sequence $ f <$> cases
   return (qn, argts, rtype, cases')
 
@@ -188,7 +188,7 @@ renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = do
   let f (sn,argts', e) = do
         eDB <- coqToDeBruijn sk e
         eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts'))) eDB
-        return (sn, argts', eN)
+        return (sn, fromToNames (length argts) (length (argts ++ argts')), eN)
   cases' <- sequence $ f <$> cases
   return (qn, argts, cases')
 

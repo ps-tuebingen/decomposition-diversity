@@ -156,6 +156,7 @@ help _ = putReplStrLn $ unlines [
   ":reload                 reload last sucessfully loaded program",
   ":multiline              start multiline mode to enter expressions spanning multiple lines (like matches)",
   ":{                      start multiline mode (see :multiline)",
+  ":declare                start declaration multiline mode to enter a declaration which may span multiple lines. This declaration will be added to the program if possible",
   ":step <n> <expr>       evaluate n steps of expressions in context of the loaded program",
   "\n --- Pretty printing options ---",
   ":set / :unset [option]  enable / disable prettyprinting option",

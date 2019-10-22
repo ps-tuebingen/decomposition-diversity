@@ -95,6 +95,5 @@ unmapVarNameParse :: [VarNameParse] -> [String]
 unmapVarNameParse = fmap (\(VarNameParse tn) -> tn)
 
 addDeclToProgram :: Declaration -> Coq_program -> Either String Coq_program
-addDeclToProgram d p = do
-    p' <- assembleProgramHelper d p
-    return (modifySkeleton (addDeclarationToSkeleton d) p')
+addDeclToProgram d p =
+    assembleProgramHelper d (modifySkeleton (addDeclarationToSkeleton d) p)

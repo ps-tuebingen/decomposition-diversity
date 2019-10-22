@@ -488,7 +488,7 @@ evalMultilineDecl multilineExpr = do
     Right decl ->
         case addDeclToProgram decl program of
             Left err -> do
-                putReplStrLn "Error while parsing multiline expression:"
+                putReplStrLn "Error while trying to add new declaration:"
                 putReplStrLn err
                 modifyReplState (\st -> st { commandMode = NormalMode })
             Right prog ->

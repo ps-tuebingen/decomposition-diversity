@@ -191,8 +191,8 @@ renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = do
         eDB <- coqToDeBruijn sk e
         let nameArg1 = fromToNames 0              (length argts - 1)
         let nameArg2 = fromToNames (length argts) (length (argts ++ argts') - 1)
-        eN <- deBruijnToNamed' (nameArgs2 ++ nameArgs1) eDB
-        return (sn, nameArgs2, eN)
+        eN <- deBruijnToNamed' (nameArg2 ++ nameArg1) eDB
+        return (sn, nameArg2, eN)
   cases' <- sequence $ f <$> cases
   return (qn, argts, cases')
 

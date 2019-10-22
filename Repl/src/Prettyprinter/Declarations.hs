@@ -115,8 +115,10 @@ renameConsumerFunctionDeclaration2 :: Coq_skeleton
 renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = do
   let f (sn, argts', e) = do
         eDB <- coqToDeBruijn sk e
-        eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts') - 1)) eDB
-        return (sn, fromToNames (length argts) (length (argts ++ argts') - 1), eN)
+        let nameArg1 = fromToNames 0              (length argts - 1)
+        let nameArg2 = fromToNames (length argts) (length (argts ++ argts') - 1)
+        eN <- deBruijnToNamed'  (nameArg2 ++ nameArg1) eDB
+        return (sn,nameArg2 , eN)
   cases' <- sequence $ f <$> cases
   return (qn, argts, rtype, cases')
 
@@ -187,8 +189,10 @@ renameGeneratorFunctionDeclaration2 :: Coq_skeleton
 renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = do
   let f (sn,argts', e) = do
         eDB <- coqToDeBruijn sk e
-        eN <- deBruijnToNamed' (fromToNames 0 (length (argts ++ argts') - 1)) eDB
-        return (sn, fromToNames (length argts) (length (argts ++ argts') - 1), eN)
+        let nameArg1 = fromToNames 0              (length argts - 1)
+        let nameArg2 = fromToNames (length argts) (length (argts ++ argts') - 1)
+        eN <- deBruijnToNamed' (nameArgs2 ++ nameArgs1) eDB
+        return (sn, nameArgs2, eN)
   cases' <- sequence $ f <$> cases
   return (qn, argts, cases')
 

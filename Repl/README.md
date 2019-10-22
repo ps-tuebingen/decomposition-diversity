@@ -28,9 +28,6 @@ Help is available by typing `:help` inside the REPL.
 - To destructorize the currently loaded program, type `:destructorize <x>`, where `<x>` is the datatype to be destructorized.
 - To transpose the currently loaded program, type `:transpose <x>`, where `<x>` is the xDatatype to be transpose.
   The REPL will figure out which direction is required when tranposing.
-
-_Missing:_
- - _declare_
  
  ### Options
  There are several options which change the REPL's behaviour.

@@ -11,26 +11,26 @@ data Nat2Nat where
   Plus(Nat)
   Mult(Nat)
 
-consumer function Nat:PlusFun(y : Nat) : Nat :=
+cfun Nat:PlusFun(y : Nat) : Nat :=
   case Zero()  => y
   case Succ(x) => Succ( x.PlusFun(y) )
 
-consumer function Nat:MultFun(y : Nat) : Nat :=
+cfun Nat:MultFun(y : Nat) : Nat :=
   case Zero()  => Zero()
   case Succ(x) => y.PlusFun( x.MultFun(y))
 
-consumer function Even:EPlus(y : Nat) : Nat :=
+cfun Even:EPlus(y : Nat) : Nat :=
   case EZero()  => y
   case ESucc(x) => Succ(Succ(x.EPlus(y)))
 
-consumer function Even:EMult(y : Nat) : Nat :=
+cfun Even:EMult(y : Nat) : Nat :=
   case EZero()  => Zero()
   case ESucc(x) => y.PlusFun(y.PlusFun(x.EMult(y)))
 
-consumer function Nat2Nat:Apply(y : Nat) : Nat :=
+cfun Nat2Nat:Apply(y : Nat) : Nat :=
   case Plus(x) => y.PlusFun(x)
   case Mult(x) => y.MultFun(x)
 
-consumer function Nat2Nat:EApply(y : Even) : Nat :=
+cfun Nat2Nat:EApply(y : Even) : Nat :=
   case Plus(x) => y.EPlus(x)
   case Mult(x) => y.EMult(x)

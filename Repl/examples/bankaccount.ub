@@ -10,31 +10,31 @@ codata BankAccount where
   Balance() : Nat
   Withdraw(Nat) : BankAccount
 
-function ifThenElse(b : Bool, t : BankAccount, e : BankAccount) : BankAccount :=
+fun ifThenElse(b : Bool, t : BankAccount, e : BankAccount) : BankAccount :=
   match Bool:Ite b using x := t : BankAccount , y := e : BankAccount returning BankAccount with
     case True() => x
     case False() => y
 
-consumer function Nat:BalanceAfterNWithdrawals(ba : BankAccount, amount : Nat) : Nat :=
+cfun Nat:BalanceAfterNWithdrawals(ba : BankAccount, amount : Nat) : Nat :=
   case Zero() => ba.Balance()
   case Succ(y) => let next := ba.Withdraw(amount)
                   in y.BalanceAfterNWithdrawals(next, amount)
 
-consumer function Nat:Plus(x : Nat) : Nat :=
+cfun Nat:Plus(x : Nat) : Nat :=
   case Zero() => x
   case Succ(y) => Succ(y.Plus(x))
 
-consumer function Nat:Minus(x : Nat) : Nat :=
+cfun Nat:Minus(x : Nat) : Nat :=
   case Zero() => Zero()
   case Succ(y) => match Nat:MinusHelper x using z := y : Nat returning Nat with
                     case Zero() => Succ(z)
                     case Succ(v) => z.Minus(v)
 
-consumer function Nat:IsZero() : Bool :=
+cfun Nat:IsZero() : Bool :=
   case Zero() => True()
   case Succ(x) => False()
 
-consumer function Nat:LessThan(x : Nat) : Bool :=
+cfun Nat:LessThan(x : Nat) : Bool :=
   case Zero() => match Nat:LessThanZero x returning Bool with
                     case Zero() => False ()
                     case Succ(y) => True ()
@@ -43,11 +43,11 @@ consumer function Nat:LessThan(x : Nat) : Bool :=
  		    case Succ(z) => z.LessThan(y)
 
 
-generator function RegularAccount(bal : Nat) : BankAccount :=
+gfun RegularAccount(bal : Nat) : BankAccount :=
   cocase Balance() => bal
   cocase Withdraw(n) => ifThenElse(bal.LessThan(n), RegularAccount(bal), RegularAccount(bal.Minus(n)))
 
-generator function StatefullAccount(bal : Nat) : BankAccount :=
+gfun StatefullAccount(bal : Nat) : BankAccount :=
   cocase Balance() => bal
   cocase Withdraw(n) => comatch BankAccount:OddStatefullAccount using b := bal : Nat with
                          cocase Balance() => b

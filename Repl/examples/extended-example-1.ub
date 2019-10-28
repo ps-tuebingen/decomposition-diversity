@@ -26,13 +26,13 @@ data Found where
 codata Value2Found where
        Apply(Value) : Found
 
-consumer function Expr:SearchNeg(ctx : Value2Found) : Found :=
+cfun Expr:SearchNeg(ctx : Value2Found) : Found :=
 	 case EVar(n)     => ctx.Apply(ValNegVar(n))
 	 case ENot(e)     => FoundRedex(RedNot(e))
 	 case EAnd(e1,e2) => FoundRedex(RedAnd(e1,e2))
 	 case EOr(e1,e2)  => FoundRedex(RedOr(e1,e2))
 
-consumer function Expr:SearchPos(ctx : Value2Found) : Found :=
+cfun Expr:SearchPos(ctx : Value2Found) : Found :=
 	 case EVar(n)     => ctx.Apply(ValPosVar(n))
 	 case ENot(e)     => e.SearchNeg(ctx)
 	 case EAnd(e1,e2) => e1.SearchPos( comatch Value2Found:AndCtx1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
@@ -46,7 +46,7 @@ consumer function Expr:SearchPos(ctx : Value2Found) : Found :=
                                                                                        )
                                           )
 
-function search(e : Expr) : Found :=
+fun search(e : Expr) : Found :=
   e.SearchPos(comatch Value2Found:EmptyCtx with
                     cocase Apply(val) => FoundValue(val)
   )

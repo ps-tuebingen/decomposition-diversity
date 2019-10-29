@@ -45,7 +45,7 @@ parseHeaderWithUsing = do
   matchname <- lexeme $ do
     tn <- uppercaseIdentP
     _ <- symbol ":"
-    n <- uppercaseIdentP
+    n <- lowercaseIdentP
     return (tn,n)
   ex <- exprP
   usinglist <- usingListP

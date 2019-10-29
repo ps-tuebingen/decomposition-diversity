@@ -16,26 +16,16 @@ import ProgramDef
 import Prettyprinter.Definitions
 import Prettyprinter.Render
 import Eval
-import LiftComatch
-import InlineMatch
-import InlineOrderCfuns
-import DtorizeIII
-import LiftMatch
-import InlineComatch
-import InlineOrderGfuns
-import CtorizeIII
 import Parser.Combined
-
-port :: Int
-port = 9999
-
-address :: String
-address = "0.0.0.0"
+import XStructorize
 
 startServer :: IO ()
 startServer = do
   putStrLn "Starting up..."
   WS.runServer address port application
+  where
+    port = 9999
+    address = "0.0.0.0"
 
 application :: WS.ServerApp
 application pending = do
@@ -43,7 +33,7 @@ application pending = do
   conn <- WS.acceptRequest pending
   putStrLn "Found connection"
   loop conn
-   where 
+   where
     loop conn = do
         request <- WS.receiveData conn
         putStr "Request:\t"
@@ -80,21 +70,16 @@ onestepEval = toMethod "onestepEval" f (Required "Coq_program" :+: Required "exp
                           Just e -> return e
                           Nothing -> throwError $ rpcError (-32002) "One_step_eval failed\nEither the input was a value or there is a bug"
 
-refuncProg :: TypeName -> Coq_program -> Coq_program
-refuncProg tn = inline_gfuns_to_program . reorder_gfuns . (flip destructorize_program tn) . (flip lift_match_to_program tn)
-
 refuncProgram :: Method IO
 refuncProgram = toMethod "refunctionalize" f (Required "Coq_program" :+: Required "typename" :+: ())
     where f :: Coq_program -> TypeName -> RpcResult IO Coq_program
-          f prog tn = return $ refuncProg tn prog
+          f prog tn = return $ dtorize tn prog
 
-defuncProg :: TypeName -> Coq_program -> Coq_program
-defuncProg tn = inline_cfuns_to_program . reorder_cfuns . (flip constructorize_program tn) . (flip lift_comatch_to_program tn)
 
 defuncProgram :: Method IO
 defuncProgram = toMethod "defunctionalize" f (Required "Coq_program" :+: Required "typename" :+: ())
     where f :: Coq_program -> TypeName -> RpcResult IO Coq_program
-          f prog tn = return $ defuncProg tn prog
+          f prog tn = return $ ctorize tn prog
 
 (...) :: (a -> b) -> (c -> d -> a) -> c -> d -> b
 (...) = (.) . (.)
@@ -104,11 +89,15 @@ prettyPrintProgram :: Method IO
 prettyPrintProgram = toMethod "prettyPrintProgram" f (Required "Coq_program" :+: Optional "config" def :+: ())
     where f :: Coq_program -> PrettyPrinterConfig -> RpcResult IO String
           f = return ... (flip progToString)
+          progToString :: PrettyPrinterConfig -> Coq_program -> String
+          progToString conf prog = docToString (progToMyDoc conf prog)
 
 prettyPrintExpression :: Method IO
 prettyPrintExpression = toMethod "prettyPrintExpression" f (Required "expression" :+: Optional "config" def :+: ())
     where f :: Coq_expr -> PrettyPrinterConfig -> RpcResult IO String
           f = return ... (flip exprToString)
+          exprToString :: PrettyPrinterConfig -> Coq_expr -> String
+          exprToString conf expr = docToString (exprToMyDoc conf expr)
 
 parseProgramFun :: Method IO
 parseProgramFun = toMethod "parseProgram" f (Required "string" :+: ())
@@ -117,8 +106,3 @@ parseProgramFun = toMethod "parseProgram" f (Required "string" :+: ())
                   Left err -> throwError $ rpcError (-32004) $ pack err
                   Right p -> return p
 
-exprToString ::PrettyPrinterConfig -> Coq_expr -> String
-exprToString conf expr = docToString (exprToMyDoc conf expr)
-
-progToString :: PrettyPrinterConfig -> Coq_program -> String
-progToString conf prog = docToString (progToMyDoc conf prog)

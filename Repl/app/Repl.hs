@@ -23,18 +23,11 @@ import Skeleton
 import Prettyprinter.Definitions
 import Prettyprinter.Render
 import Eval
-import LiftComatch
-import InlineMatch
-import InlineOrderCfuns
-import CtorizeIII
-import LiftMatch
-import InlineComatch
-import InlineOrderGfuns
-import DtorizeIII
 import AssembleProgram (addDeclToProgram)
 import Parser.Combined (parseExpression, parseProgram)
 import Parser.Definitions (parseInput)
 import Parser.Declarations (declarationP)
+import XStructorize
 
 --------------------------------------------------------------------------------
 -- The Repl Monad
@@ -194,9 +187,6 @@ showProgram _ = execIfInNormalMode $ do
 -- Constructorizes the given codata type
 --------------------------------------------------------------------------------
 
-constructorizeProg :: TypeName -> Coq_program -> Coq_program
-constructorizeProg tn = inline_cfuns_to_program . reorder_cfuns . flip constructorize_program tn . flip lift_comatch_to_program tn
-
 -- | Takes one argument and replaces the current Program by its constructorized version.
 constructorize :: [String] -> Repl ()
 constructorize [] = execIfInNormalMode $ putReplStrLn "Constructorize needs at least one codatatype parameter"
@@ -206,7 +196,7 @@ constructorize (arg:_) = execIfInNormalMode $ do
 
 constructorize' :: String -> Coq_program -> Repl ()
 constructorize' arg prog = do
-  let newProg = constructorizeProg arg prog
+  let newProg = ctorize arg prog
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
   putReplStrLn "Successfully constructorized program!"
 
@@ -215,9 +205,6 @@ constructorize' arg prog = do
 --
 -- Destructorizes the given data type
 --------------------------------------------------------------------------------
-
-destructorizeProg :: TypeName -> Coq_program -> Coq_program
-destructorizeProg tn = inline_gfuns_to_program . reorder_gfuns . flip destructorize_program tn . flip lift_match_to_program tn
 
 -- | Takes one argument and replaces the current Program by its constructorized version.
 destructorize :: [String] -> Repl ()
@@ -228,7 +215,7 @@ destructorize (arg:_) = execIfInNormalMode $ do
 
 destructorize' :: String -> Coq_program -> Repl ()
 destructorize' arg prog = do
-  let newProg = destructorizeProg arg prog
+  let newProg = dtorize arg prog
   lift $ modify $ \replState -> (replState {currentProgram =  newProg})
   putReplStrLn "Successfully destructorized program!"
 

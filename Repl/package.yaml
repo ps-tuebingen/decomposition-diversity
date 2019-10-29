@@ -33,6 +33,8 @@ dependencies:
 - data-default
 - directory
 - aeson
+- websockets
+- json-rpc-server
 
 library:
   source-dirs:
@@ -48,7 +50,8 @@ library:
 executables:
   Repl:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:
+      - app
     ghc-options:
     - -threaded
     - -rtsopts

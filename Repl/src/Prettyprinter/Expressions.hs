@@ -130,7 +130,7 @@ cocaseToDoc (sn, args, e) = do
   ppsn <- scopedNameToDoc sn
   let ppargs = (parens . hsep) (intersperse comma (pretty <$> args))
   ppe <- exprToDoc e
-  return (pretty "case" <+> ppsn <> ppargs <+> pretty "=>" <+> ppe)
+  return (pretty "cocase" <+> ppsn <> ppargs <+> pretty "=>" <+> ppe)
 
 -- | Prettyprint local comatches.
 comatchToDoc :: QName -> [(String, ExprNamed, TypeName)] -> [(ScopedName, [String], ExprNamed)] -> PrettyPrinter

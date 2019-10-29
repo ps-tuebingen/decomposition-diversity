@@ -32,6 +32,7 @@ dependencies:
 - transformers
 - data-default
 - directory
+- aeson
 
 library:
   source-dirs:
@@ -39,6 +40,7 @@ library:
     - extracted
   ghc-options:
     - -Wall
+    - -Wno-unused-imports
     - -fwarn-tabs
     - -Wno-name-shadowing
     - -Wno-orphans

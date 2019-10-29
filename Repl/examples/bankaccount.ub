@@ -7,49 +7,49 @@ data Bool where
   False()
 
 codata BankAccount where
-  Balance() : Nat
-  Withdraw(Nat) : BankAccount
+  balance() : Nat
+  withdraw(Nat) : BankAccount
 
 function ifThenElse(b : Bool, t : BankAccount, e : BankAccount) : BankAccount :=
-  match Bool:Ite b using x := t : BankAccount , y := e : BankAccount returning BankAccount with
+  match Bool:ite b using x := t : BankAccount , y := e : BankAccount returning BankAccount with
     case True() => x
     case False() => y
 
-consumer function Nat:BalanceAfterNWithdrawals(ba : BankAccount, amount : Nat) : Nat :=
-  case Zero() => ba.Balance()
-  case Succ(y) => let next := ba.Withdraw(amount)
-                  in y.BalanceAfterNWithdrawals(next, amount)
+consumer function Nat:balanceAfterNWithdrawals(ba : BankAccount, amount : Nat) : Nat :=
+  case Zero() => ba.balance()
+  case Succ(y) => let next := ba.withdraw(amount)
+                  in y.balanceAfterNWithdrawals(next, amount)
 
-consumer function Nat:Plus(x : Nat) : Nat :=
+consumer function Nat:plus(x : Nat) : Nat :=
   case Zero() => x
-  case Succ(y) => Succ(y.Plus(x))
+  case Succ(y) => Succ(y.plus(x))
 
-consumer function Nat:Minus(x : Nat) : Nat :=
+consumer function Nat:minus(x : Nat) : Nat :=
   case Zero() => Zero()
-  case Succ(y) => match Nat:MinusHelper x using z := y : Nat returning Nat with
+  case Succ(y) => match Nat:minusHelper x using z := y : Nat returning Nat with
                     case Zero() => Succ(z)
-                    case Succ(v) => z.Minus(v)
+                    case Succ(v) => z.minus(v)
 
-consumer function Nat:IsZero() : Bool :=
+consumer function Nat:isZero() : Bool :=
   case Zero() => True()
   case Succ(x) => False()
 
-consumer function Nat:LessThan(x : Nat) : Bool :=
-  case Zero() => match Nat:LessThanZero x returning Bool with
+consumer function Nat:lessThan(x : Nat) : Bool :=
+  case Zero() => match Nat:lessThanZero x returning Bool with
                     case Zero() => False ()
                     case Succ(y) => True ()
-  case Succ(y) => match Nat:LessThanSucc x using y := y : Nat returning Bool with
+  case Succ(y) => match Nat:lessThanSucc x using y := y : Nat returning Bool with
                     case Zero() => False()
- 		    case Succ(z) => z.LessThan(y)
+ 		    case Succ(z) => z.lessThan(y)
 
 
 generator function RegularAccount(bal : Nat) : BankAccount :=
-  cocase Balance() => bal
-  cocase Withdraw(n) => ifThenElse(bal.LessThan(n), RegularAccount(bal), RegularAccount(bal.Minus(n)))
+  cocase balance() => bal
+  cocase withdraw(n) => ifThenElse(bal.lessThan(n), RegularAccount(bal), RegularAccount(bal.minus(n)))
 
 generator function StatefullAccount(bal : Nat) : BankAccount :=
-  cocase Balance() => bal
-  cocase Withdraw(n) => comatch BankAccount:OddStatefullAccount using b := bal : Nat with
-                         cocase Balance() => b
-                         cocase Withdraw(n) => StatefullAccount(b.Minus(n))
+  cocase balance() => bal
+  cocase withdraw(n) => comatch BankAccount:OddStatefullAccount using b := bal : Nat with
+                         cocase balance() => b
+                         cocase withdraw(n) => StatefullAccount(b.minus(n))
  

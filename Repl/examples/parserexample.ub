@@ -15,14 +15,14 @@ data Nat where
 
 fun testSuccZero() : Nat :=
   Succ(Zero())
-  
+
 data Test1 where
   Constr1(Nat, Nat, Nat, Nat)
   Constr2(Nat, Nat, Nat, Nat)
 
 codata Test2 where
-  Destr1(Nat, NatStream, Nat, Nat) : Bool
-  Destr2(Nat, Nat, Nat, Nat) : Nat
+  destr1(Nat, NatStream, Nat, Nat) : Bool
+  destr2(Nat, Nat, Nat, Nat) : Nat
 
 fun test4() : Nat :=
   4
@@ -51,15 +51,15 @@ fun testLetFooInZ(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   in z
 
 gfun Ascending(x : Nat) : Test2 :=
-  cocase Destr1(y,z,v,w) => True()
-  cocase Destr2(y,z,v,w) => x
+  cocase destr1(y,z,v,w) => True()
+  cocase destr2(y,z,v,w) => x
 
-cfun Test1:Mycfun(x : Bool) : Nat :=
+cfun Test1:mycfun(x : Bool) : Nat :=
   case Constr1(y, z, v, w) => y
   case Constr2(y, z, v, w) => z
 
 
 codata NatStream where
-  Current() : Nat
-  Next() : NatStream
+  current() : Nat
+  next() : NatStream
 

@@ -52,7 +52,18 @@ scopedNameHelperP tn = try local <|> global
     global = do
       n <- uppercaseIdentP
       return (Coq_global (tn,n))
-      
+
+scopedNameHelperPLC :: TypeName -> Parser ScopedName
+scopedNameHelperPLC tn = try local <|> global
+  where
+    local :: Parser ScopedName
+    local = do
+      n <- underscoreLowercaseIdentP
+      return (Coq_local (tn,n))
+    global :: Parser ScopedName
+    global = do
+      n <- lowercaseIdentP
+      return (Coq_global (tn,n))
 --------------------------------------------------------------------------------
 -- DataType Parsers ------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -114,7 +125,7 @@ coDataTypeHeaderP = do
 -- | Parse one destructor of a codatatype declaration.
 coDataTypeDtorP :: TypeNameParse -> Parser (ScopedName, [TypeNameParse], TypeNameParse)
 coDataTypeDtorP (TypeNameParse tn) = do
-  sname <- scopedNameHelperP tn
+  sname <- scopedNameHelperPLC tn
   args <- parens $ typeNameP `sepBy` symbol ","
   _ <- symbol ":"
   returntype <- typeNameP
@@ -171,7 +182,7 @@ functionDeclSigP = do
 cocaseP :: TypeName -> Parser (ScopedName,[VarNameParse],  ExprParse)
 cocaseP tn = do
   rword "cocase"
-  sn <- scopedNameHelperP tn    
+  sn <- scopedNameHelperPLC tn
   fargs <- parens (varP `sepBy` symbol ",")
   _ <- symbol "=>"
   ex <- exprP
@@ -231,7 +242,7 @@ consumerFunctionDeclSigP = do
   qn <- do
     tn <- uppercaseIdentP
     _ <- symbol ":"
-    n <- uppercaseIdentP
+    n <- lowercaseIdentP
     return (tn,n)
   fargs <- parens  parseArgs
   _ <- symbol ":"

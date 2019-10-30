@@ -45,7 +45,7 @@ parseHeaderWithUsing = do
   matchname <- lexeme $ do
     tn <- uppercaseIdentP
     _ <- symbol ":"
-    n <- uppercaseIdentP
+    n <- lowercaseIdentP
     return (tn,n)
   ex <- exprP
   usinglist <- usingListP
@@ -91,7 +91,7 @@ parseCoHeaderWithUsing = do
 parseCoCase :: Parser (SNameParse,[VarNameParse], ExprParse)
 parseCoCase = do
   rword "cocase"
-  fname <- snameP
+  fname <- snamePLC
   fargs <- parens (varP `sepBy` symbol ",")
   _ <- symbol "=>"
   ex <- exprP
@@ -112,7 +112,7 @@ consumerCallP = do
 consumerP :: Parser ConsumerCall
 consumerP = do
   _ <- symbol "."
-  dname <- snameP
+  dname <- snamePLC
   args <- parens $ exprP `sepBy` symbol ","
   return (dname,args)
 

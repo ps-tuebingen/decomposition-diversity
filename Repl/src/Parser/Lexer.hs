@@ -4,13 +4,17 @@ module Parser.Lexer
   , scn
   , lexeme
   , uppercaseIdentP
+  , lowercaseIdentP
   , underscoreUppercaseIdentP
+  , underscoreLowercaseIdentP
   , symbol
   , parens
   , rword
   , typeNameP
   , qnameP
   , snameP
+  , qnamePLC
+  , snamePLC
   , fnameP
   , varP
   ) where
@@ -76,6 +80,8 @@ uppercaseIdentP =  (:) <$> upperChar <*> many alphaNumChar
 underscoreUppercaseIdentP :: Parser String
 underscoreUppercaseIdentP = char '_' >> ((:) <$> upperChar <*> many alphaNumChar)
 
+underscoreLowercaseIdentP :: Parser String
+underscoreLowercaseIdentP = char '_' >> ((:) <$> lowerChar <*> many alphaNumChar)
 
 -- | Identifier type 1.
 -- [a-z][a-z,A-Z,0-9]* \ rws
@@ -97,7 +103,9 @@ typeNameP = do
   tn <- lexeme uppercaseIdentP
   return (TypeNameParse tn)
 
--- Qualified Names
+--------------------------------------------------------------------------------
+-- Qualified Names starting with an upperCase
+--------------------------------------------------------------------------------
 
 -- | Parse an explicitly given QName, e.g. "Bool:true"
 qnameExplP :: Parser QNameParse
@@ -145,6 +153,57 @@ snameGlobalImplP = lexeme $ do
 
 snameP :: Parser SNameParse
 snameP = try snameLocalExplP <|> try snameGlobalExplP <|> try snameLocalImplP <|> snameGlobalImplP
+
+--------------------------------------------------------------------------------
+-- Qualified Names starting with a lowerCase
+--------------------------------------------------------------------------------
+
+-- | Parse an explicitly given QName, e.g. "Bool:true"
+qnameExplPLC :: Parser QNameParse
+qnameExplPLC = lexeme $ do
+  tn <- uppercaseIdentP
+  _ <- symbol ":"
+  n <- lowercaseIdentP
+  return (QNameExpl tn n)
+
+-- | Parse an implicitly given QName, e.g. "true"
+qnameImplPLC :: Parser QNameParse
+qnameImplPLC = lexeme $ do
+  n <- lowercaseIdentP
+  return (QNameImpl n)
+
+-- | Parse a QName, i.e. either "Bool:true" or "true"
+qnamePLC :: Parser QNameParse
+qnamePLC = try qnameExplPLC <|> qnameImplPLC
+
+-- Scoped Names
+
+snameLocalExplPLC :: Parser SNameParse
+snameLocalExplPLC = lexeme $ do
+  tn <- uppercaseIdentP
+  _ <- symbol ":"
+  n <- underscoreLowercaseIdentP
+  return (Local (QNameExpl tn n))
+
+snameGlobalExplPLC :: Parser SNameParse
+snameGlobalExplPLC = lexeme $ do
+  tn <- uppercaseIdentP
+  _ <- symbol ":"
+  n <- lowercaseIdentP
+  return (Global (QNameExpl tn n))
+
+snameLocalImplPLC :: Parser SNameParse
+snameLocalImplPLC = lexeme $ do
+  n <- underscoreLowercaseIdentP
+  return (Local (QNameImpl n))
+
+snameGlobalImplPLC :: Parser SNameParse
+snameGlobalImplPLC = lexeme $ do
+  n <- lowercaseIdentP
+  return (Global (QNameImpl n))
+
+snamePLC :: Parser SNameParse
+snamePLC = try snameLocalExplPLC <|> try snameGlobalExplPLC <|> try snameLocalImplPLC <|> snameGlobalImplPLC
 
 -- Function Names
 

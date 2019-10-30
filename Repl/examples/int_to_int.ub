@@ -11,26 +11,26 @@ data Nat2Nat where
   Plus(Nat)
   Mult(Nat)
 
-cfun Nat:PlusFun(y : Nat) : Nat :=
+cfun Nat:plusFun(y : Nat) : Nat :=
   case Zero()  => y
-  case Succ(x) => Succ( x.PlusFun(y) )
+  case Succ(x) => Succ( x.plusFun(y) )
 
-cfun Nat:MultFun(y : Nat) : Nat :=
+cfun Nat:multFun(y : Nat) : Nat :=
   case Zero()  => Zero()
-  case Succ(x) => y.PlusFun( x.MultFun(y))
+  case Succ(x) => y.plusFun( x.multFun(y))
 
-cfun Even:EPlus(y : Nat) : Nat :=
+cfun Even:ePlus(y : Nat) : Nat :=
   case EZero()  => y
-  case ESucc(x) => Succ(Succ(x.EPlus(y)))
+  case ESucc(x) => Succ(Succ(x.ePlus(y)))
 
-cfun Even:EMult(y : Nat) : Nat :=
+cfun Even:eMult(y : Nat) : Nat :=
   case EZero()  => Zero()
-  case ESucc(x) => y.PlusFun(y.PlusFun(x.EMult(y)))
+  case ESucc(x) => y.plusFun(y.plusFun(x.eMult(y)))
 
-cfun Nat2Nat:Apply(y : Nat) : Nat :=
-  case Plus(x) => y.PlusFun(x)
-  case Mult(x) => y.MultFun(x)
+cfun Nat2Nat:apply(y : Nat) : Nat :=
+  case Plus(x) => y.plusFun(x)
+  case Mult(x) => y.multFun(x)
 
-cfun Nat2Nat:EApply(y : Even) : Nat :=
-  case Plus(x) => y.EPlus(x)
-  case Mult(x) => y.EMult(x)
+cfun Nat2Nat:eApply(y : Even) : Nat :=
+  case Plus(x) => y.ePlus(x)
+  case Mult(x) => y.eMult(x)

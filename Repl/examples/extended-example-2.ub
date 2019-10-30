@@ -30,23 +30,23 @@ data Value2Found where
    _OrCtx1(Expr , Value2Found)
    _OrCtx4(Value , Value2Found)
 
-function search(e : Expr) : Found :=
+fun search(e : Expr) : Found :=
    e.SearchPos(_EmptyCtx())
 
-consumer function Value2Found:Apply(v : Value) : Found :=
+cfun Value2Found:Apply(v : Value) : Found :=
    case _EmptyCtx()      => FoundValue(v)
    case _AndCtx1(e,ctx)  => e.SearchPos(_AndCtx2(v,ctx))
    case _AndCtx2(v2,ctx) => ctx.Apply(ValAnd(v, v2))
    case _OrCtx1(e,ctx)   => e.SearchPos(_OrCtx4(v,ctx))
    case _OrCtx4(v2,ctx)  => ctx.Apply(ValOr(v,v2))
 
-consumer function Expr:SearchPos(ctx : Value2Found) : Found :=
+cfun Expr:SearchPos(ctx : Value2Found) : Found :=
    case EVar(id)    => ctx.Apply(ValPosVar(id))
    case ENot(e)     => e.SearchNeg(ctx)
    case EAnd(e1,e2) => e1.SearchPos(_AndCtx1(e2, ctx))
    case EOr(e1,e2)  => e1.SearchPos(_OrCtx1(e2 , ctx))
 
-consumer function Expr:SearchNeg(ctx : Value2Found) : Found :=
+cfun Expr:SearchNeg(ctx : Value2Found) : Found :=
    case EVar(id) => ctx.Apply(ValNegVar(id))
    case ENot(e) => FoundRedex(RedNot(e))
    case EAnd(e1,e2) => FoundRedex(RedAnd(e1, e2))

@@ -9,15 +9,15 @@ codata NatStream where
    current() : Nat
    next() : NatStream
 
-function three() : Nat :=
+fun three() : Nat :=
    3
    
-function constStream(x : Nat) : NatStream :=
+fun constStream(x : Nat) : NatStream :=
    comatch NatStream:ConstStream using y := x : Nat with
       cocase current() => y
       cocase next() => constStream(y)
 
-function addStreamsStrict(x : NatStream , y : NatStream) : NatStream :=
+fun addStreamsStrict(x : NatStream , y : NatStream) : NatStream :=
    let z := y.current() 
    in let v := x.current() 
       in let w := y.next() 
@@ -26,41 +26,41 @@ function addStreamsStrict(x : NatStream , y : NatStream) : NatStream :=
                   cocase current() => x5.plus(x4)
                   cocase next() => addStreamsStrict(x3 , x2)
 
-function omega() : Nat :=
+fun omega() : Nat :=
    omega()
 
-consumer function Nat:plus(x : Nat) : Nat :=
+cfun Nat:plus(x : Nat) : Nat :=
    case Zero() => x
    case Succ(y) => Succ(y.plus(x))
 
-consumer function Nat:getAtIndex(x : NatStream) : Nat :=
+cfun Nat:getAtIndex(x : NatStream) : Nat :=
    case Zero() => x.current()
    case Succ(y) => y.getAtIndex(x.next())
 
-consumer function Nat:omegaMatch() : Nat :=
+cfun Nat:omegaMatch() : Nat :=
    case Zero() => 0
    case Succ(x) => Succ(x).omegaMatch()
 
-generator function AddToStream(x : NatStream , y : Nat) : NatStream :=
+gfun AddToStream(x : NatStream , y : Nat) : NatStream :=
    cocase current() => y.plus(x.current())
    cocase next() => AddToStream(x.next() , y)
    
-generator function Ascending() : NatStream :=
+gfun Ascending() : NatStream :=
    cocase current() => 0
    cocase next() => AddToStream(Ascending() , 1)
    
-generator function AddStreams(y : NatStream , x : NatStream) : NatStream :=
+gfun AddStreams(y : NatStream , x : NatStream) : NatStream :=
    cocase current() => y.current().plus(x.current())
    cocase next() => AddStreams(y.next() , x.next())
    
-generator function OmegaComatch() : NatStream :=
+gfun OmegaComatch() : NatStream :=
    cocase current() => 0
    cocase next() => OmegaComatch().next()
    
-generator function Fibonacci() : NatStream :=
+gfun Fibonacci() : NatStream :=
    cocase current() => 0
    cocase next() => ShiftedFib()
    
-generator function ShiftedFib() : NatStream :=
+gfun ShiftedFib() : NatStream :=
    cocase current() => 1
    cocase next() => AddStreams(Fibonacci() , ShiftedFib())

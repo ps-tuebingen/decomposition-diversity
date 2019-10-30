@@ -24,30 +24,30 @@ data Found where
     FoundRedex(Redex)
 
 codata Value2Found where
-       Apply(Value) : Found
+       apply(Value) : Found
 
-cfun Expr:SearchNeg(ctx : Value2Found) : Found :=
-	 case EVar(n)     => ctx.Apply(ValNegVar(n))
+cfun Expr:searchNeg(ctx : Value2Found) : Found :=
+	 case EVar(n)     => ctx.apply(ValNegVar(n))
 	 case ENot(e)     => FoundRedex(RedNot(e))
 	 case EAnd(e1,e2) => FoundRedex(RedAnd(e1,e2))
 	 case EOr(e1,e2)  => FoundRedex(RedOr(e1,e2))
 
-cfun Expr:SearchPos(ctx : Value2Found) : Found :=
-	 case EVar(n)     => ctx.Apply(ValPosVar(n))
-	 case ENot(e)     => e.SearchNeg(ctx)
-	 case EAnd(e1,e2) => e1.SearchPos( comatch Value2Found:AndCtx1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
-                                                    cocase Apply(val1) => e2.SearchPos( comatch Value2Found:AndCtx2 using val1 := val1 : Value , ctx := ctx : Value2Found with
-                                                                                             cocase Apply(val2) => ctx.Apply(ValAnd(val1, val2))
+cfun Expr:searchPos(ctx : Value2Found) : Found :=
+	 case EVar(n)     => ctx.apply(ValPosVar(n))
+	 case ENot(e)     => e.searchNeg(ctx)
+	 case EAnd(e1,e2) => e1.searchPos( comatch Value2Found:AndCtx1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
+                                                    cocase apply(val1) => e2.searchPos( comatch Value2Found:AndCtx2 using val1 := val1 : Value , ctx := ctx : Value2Found with
+                                                                                             cocase apply(val2) => ctx.apply(ValAnd(val1, val2))
                                                                                        )
                                           )
-	 case EOr(e1,e2)  => e1.SearchPos( comatch Value2Found:OrCtx1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
-                                                    cocase Apply(val1) => e2.SearchPos( comatch Value2Found:OrCtx4 using val1 := val1 : Value , ctx := ctx : Value2Found with
-                                                                                             cocase Apply(val2) => ctx.Apply(ValOr(val1, val2))
+	 case EOr(e1,e2)  => e1.searchPos( comatch Value2Found:OrCtx1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
+                                                    cocase apply(val1) => e2.searchPos( comatch Value2Found:OrCtx4 using val1 := val1 : Value , ctx := ctx : Value2Found with
+                                                                                             cocase apply(val2) => ctx.apply(ValOr(val1, val2))
                                                                                        )
                                           )
 
 fun search(e : Expr) : Found :=
-  e.SearchPos(comatch Value2Found:EmptyCtx with
-                    cocase Apply(val) => FoundValue(val)
+  e.searchPos(comatch Value2Found:EmptyCtx with
+                    cocase apply(val) => FoundValue(val)
   )
 

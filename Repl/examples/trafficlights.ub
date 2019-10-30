@@ -12,32 +12,32 @@ data Bool where
   False()
 
 codata TrafficLight where
-  Color() : Color
-  Switch() : TrafficLight
+  color() : Color
+  switch() : TrafficLight
 
 fun ifThenElse(b : Bool, t : TrafficLight, e : TrafficLight) : TrafficLight :=
-  match Bool:Ite b using x := t : TrafficLight , y := e : TrafficLight returning TrafficLight with
+  match Bool:ite b using x := t : TrafficLight , y := e : TrafficLight returning TrafficLight with
     case True() => x
     case False() => y
 
-cfun Nat:NthColor(tl : TrafficLight) : Color :=
-  case Zero() => tl.Color()
-  case Succ(y) => let next := tl.Switch()
-                  in y.NthColor(next)
+cfun Nat:nthColor(tl : TrafficLight) : Color :=
+  case Zero() => tl.color()
+  case Succ(y) => let next := tl.switch()
+                  in y.nthColor(next)
 
-cfun Nat:Plus(x : Nat) : Nat :=
+cfun Nat:plus(x : Nat) : Nat :=
   case Zero() => x
-  case Succ(y) => Succ(y.Plus(x))
+  case Succ(y) => Succ(y.plus(x))
 
 gfun ConstRed() : TrafficLight :=
-  cocase Color() => Red()
-  cocase Switch() => ConstRed()
+  cocase color() => Red()
+  cocase switch() => ConstRed()
 
 gfun RedLight() : TrafficLight :=
-  cocase Color() => Red()
-  cocase Switch() => comatch TrafficLight:GreenLight with
-                         cocase Color() => Green()
-                         cocase Switch() => comatch TrafficLight:YellowLight with
-                                                cocase Color() => Yellow()
-                                                cocase Switch() => RedLight()
- 
+  cocase color() => Red()
+  cocase switch() => comatch TrafficLight:GreenLight with
+                         cocase color() => Green()
+                         cocase switch() => comatch TrafficLight:YellowLight with
+                                                cocase color() => Yellow()
+                                                cocase switch() => RedLight()
+

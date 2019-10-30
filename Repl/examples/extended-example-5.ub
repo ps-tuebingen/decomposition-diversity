@@ -27,13 +27,13 @@ codata Value2Found where
    Apply(Value) : Found
    Combine(Expr) : Expr
 
-function search(e : Expr) : Found :=
+fun search(e : Expr) : Found :=
  e.SearchPos( comatch Value2Found:EmptyCtx  with
                  cocase Apply(v) => FoundValue(v)
                  cocase Combine(e) => e
             )
 
-consumer function Expr:SearchPos(ctx : Value2Found) : Found :=
+cfun Expr:SearchPos(ctx : Value2Found) : Found :=
    case EVar(id) => ctx.Apply(ValPosVar(id))
    case ENot(e) => e.SearchNeg(ctx)
    case EAnd(e1,e2) => e1.SearchPos( comatch Value2Found:AndCtx1 using e2 := e2 : Expr , ctx := ctx : Value2Found with
@@ -51,13 +51,13 @@ consumer function Expr:SearchPos(ctx : Value2Found) : Found :=
                                               cocase Combine(ex) => EOr(ctx.Combine(ex) , e2)
 			          )
 
-consumer function Expr:SearchNeg(ctx : Value2Found) : Found :=
+cfun Expr:SearchNeg(ctx : Value2Found) : Found :=
    case EVar(id)    => ctx.Apply(ValNegVar(id))
    case ENot(e)     => FoundRedex(RedNot(e) , ctx)
    case EAnd(e1,e2) => FoundRedex(RedAnd(e1, e2) , ctx)
    case EOr(e1,e2)  => FoundRedex(RedOr(e1, e2) , ctx)
 
-consumer function Value:AsExpr() : Expr :=
+cfun Value:AsExpr() : Expr :=
    case ValPosVar(id) => EVar(id)
    case ValNegVar(id) => ENot(EVar(id))
    case ValAnd(v1,v2) => EAnd(v1.AsExpr() , v2.AsExpr())

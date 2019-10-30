@@ -58,8 +58,8 @@ parens = between (symbol "(") (symbol ")")
 
 -- | A list of reserved keywords
 rws :: [String]
-rws = ["data", "codata", "where", "in", "let", "match", "comatch", "function",
-       "case", "cocase", "generator", "consumer", "using", "with", "returning"]
+rws = ["data", "codata", "where", "in", "let", "match", "comatch", "fun",
+       "case", "cocase", "gfun", "cfun", "using", "with", "returning"]
 
 -- | Parse a reserved keyword.
 -- The parsed keyword mustn't be the prefix of an identifier.

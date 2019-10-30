@@ -13,7 +13,7 @@ data Nat where
   Zero()
   Succ(Nat)
 
-function testSuccZero() : Nat :=
+fun testSuccZero() : Nat :=
   Succ(Zero())
   
 data Test1 where
@@ -24,37 +24,37 @@ codata Test2 where
   Destr1(Nat, NatStream, Nat, Nat) : Bool
   Destr2(Nat, Nat, Nat, Nat) : Nat
 
-function test4() : Nat :=
+fun test4() : Nat :=
   4
 
-function testx(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
+fun testx(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   x
 
-function testy(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
+fun testy(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   y
 
-function testz(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
+fun testz(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   z
 
-function testv(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
+fun testv(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   v
 
-function testw(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
+fun testw(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   w
 
-function testLetFooInFoo(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
+fun testLetFooInFoo(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   let foo := x
   in foo
 
-function testLetFooInZ(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
+fun testLetFooInZ(x : Bool, y : Bool, z : Bool, v : Bool, w : Bool) : Bool :=
   let foo := x
   in z
 
-generator function Ascending(x : Nat) : Test2 :=
+gfun Ascending(x : Nat) : Test2 :=
   cocase Destr1(y,z,v,w) => True()
   cocase Destr2(y,z,v,w) => x
 
-consumer function Test1:Mycfun(x : Bool) : Nat :=
+cfun Test1:Mycfun(x : Bool) : Nat :=
   case Constr1(y, z, v, w) => y
   case Constr2(y, z, v, w) => z
 

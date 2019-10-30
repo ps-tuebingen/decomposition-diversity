@@ -60,7 +60,7 @@ functionDeclarationToDoc fname argts rtype body = do
   ppbody <- exprToDoc body
   ppargs <- argumentListToDoc argts
   return $
-    keyword "function" <+> pretty fname <> ppargs <+> colon <+> typename rtype <+> pretty ":=" <>
+    keyword "fun" <+> pretty fname <> ppargs <+> colon <+> typename rtype <+> pretty ":=" <>
     (nest 3 (line <> ppbody))
 
 -- | Prettyprint all function declarations.
@@ -134,7 +134,7 @@ consumerFunctionDeclarationToDoc qn argts rtype cases = do
   ppcases <- sequence (caseToDoc <$> cases)
   ppargs <- argumentListToDoc argts
   return $
-    keyword "consumer function" <+>
+    keyword "cfun" <+>
     typename (fst qn) <> pretty ":" <> pretty (snd qn) <>
     ppargs <+> colon <+> typename rtype <+> pretty ":=" <>
     (nest 3 (line <> (vcat ppcases)))
@@ -203,7 +203,7 @@ generatorFunctionDeclarationToDoc qn argts cocases = do
   ppargs <- argumentListToDoc argts
   ppqn <- qNameToDoc qn
   return $
-    keyword "generator function" <+> ppqn <> ppargs <+> colon <+> typename (fst qn) <+> pretty ":=" <>
+    keyword "gfun" <+> ppqn <> ppargs <+> colon <+> typename (fst qn) <+> pretty ":=" <>
     (nest 3 (line <> (vcat ppcocases)))
 
 -- | Prettyprint all generator function declarations.

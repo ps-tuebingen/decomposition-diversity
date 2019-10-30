@@ -2,7 +2,7 @@ data Nat where
    Zero()
    Succ(Nat)
 
-consumer function Nat:Sub(m: Nat) : Nat :=
+cfun Nat:Sub(m: Nat) : Nat :=
   case Zero() => Zero()
   case Succ(n) => 
      match Nat:Aux m using n1 := n : Nat returning Nat with
@@ -19,31 +19,31 @@ codata Env where
 codata Exp where
   Eval(Env) : Val
 
-generator function Cons(v: Val, env: Env) : Env :=
+gfun Cons(v: Val, env: Env) : Env :=
   cocase Index(i) => 
     match Nat:Lookup i using v1 := v : Val, e := env : Env returning Val with
        case Zero() => v1
        case Succ(n) => e.Index(n) 
        
-generator function Nil() : Env :=
+gfun Nil() : Env :=
   cocase Index(i) => Nil().Index(i)
          
-generator function Var(n: Nat) : Exp :=
+gfun Var(n: Nat) : Exp :=
   cocase Eval(env) => env.Index(n)
   
-generator function App(f: Exp, a: Exp) : Exp :=
+gfun App(f: Exp, a: Exp) : Exp :=
   cocase Eval(env) => f.Eval(env).Apply(a.Eval(env))  
   
-generator function Fun(body: Exp): Exp :=
+gfun Fun(body: Exp): Exp :=
   cocase Eval(env) => 
      comatch Val:Closure using b := body : Exp, en := env : Env with
         cocase Apply(arg) => b.Eval(Cons(arg,en))  
         cocase Reify(lvl) => Fun(b.Eval(Cons(ResVar(Succ(lvl)),en)).Reify(Succ(lvl)))
         
-generator function ResVar(n: Nat) : Val :=
+gfun ResVar(n: Nat) : Val :=
   cocase Apply(arg) => ResApp(ResVar(n),arg)
   cocase Reify(lvl) => Var(lvl.Sub(n))
   
-generator function ResApp(v1: Val, v2: Val) : Val := 
+gfun ResApp(v1: Val, v2: Val) : Val := 
   cocase Apply(v3) => ResApp(ResApp(v1,v2),v3)
   cocase Reify(lvl) => App(v1.Reify(lvl),v2.Reify(lvl))  

@@ -156,7 +156,7 @@ functionDeclP = L.nonIndented scn (L.indentBlock scn parse)
 -- | Parse the declaration of a function.
 functionDeclSigP :: Parser (FNameParse, [(VarNameParse, TypeNameParse)], TypeNameParse) 
 functionDeclSigP = do
-  try (rword "function")
+  try (rword "fun")
   fname <- fnameP
   fargs <- parens parseArgs
   _ <- symbol ":"
@@ -191,7 +191,7 @@ generatorFunctionDeclP = L.nonIndented scn (L.indentBlock scn parse)
 -- | Parse the declaration of a generator function.
 generatorFunctionDeclSigP :: Parser (QName, [(VarNameParse, TypeNameParse)])
 generatorFunctionDeclSigP = do
-  try (rword "generator function")
+  try (rword "gfun")
   fname <- uppercaseIdentP
   fargs <- parens parseArgs
   _ <- symbol ":"
@@ -227,7 +227,7 @@ consumerFunctionDeclP = L.nonIndented scn (L.indentBlock scn parse)
 -- Returns the Signature of the consumer function and a list of the names of the bound variables.
 consumerFunctionDeclSigP :: Parser (QName, [(VarNameParse, TypeNameParse)], TypeNameParse)
 consumerFunctionDeclSigP = do
-  try (rword "consumer function")
+  try (rword "cfun")
   qn <- do
     tn <- uppercaseIdentP
     _ <- symbol ":"

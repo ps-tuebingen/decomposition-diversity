@@ -46,7 +46,7 @@ The Dockerfile builds the formalization and extracts the Haskell code. In order 
 Example (with cached results):
 
 ```console
-./build-with-docker.sh
+> ./build-with-docker.sh
 Sending build context to Docker daemon  49.13MB
 Step 1/7 : FROM coqorg/coq:8.8.2
  ---> 5af97f51b90b

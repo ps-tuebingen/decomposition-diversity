@@ -1,5 +1,80 @@
 # Formalization of total Constructorization / Destructorization
 
+## How to build
+
+There are two ways to build the Coq formalization: either directly on your computer or inside a Docker container.
+
+### Building locally
+
+Building locally presupposes that you have a current version of Coq installed. We verified that the project builds with Coq 8.8.2.
+
+The Makefile provides an `all` target which builds all parts relevant to the proofs.
+
+```console
+> make
+coqdep -noglob InlineLiftComatch.v | head -n1 | sed 's/\s*[a-zA-Z]*\.v\.beautified//g' > InlineLiftComatch.d
+...
+coqdep -noglob UtilsSkeleton.v | head -n1 | sed 's/\s*[a-zA-Z]*\.v\.beautified//g' > UtilsSkeleton.d
+coqc Names.v
+...
+coqc  Results.v
+Closed under the global context
+Closed under the global context
+Closed under the global context
+Closed under the global context
+Closed under the global context
+Axioms:
+sort_cfuns_for_inline_permutes : forall p : program,
+...
+```
+
+The `extract` target of the Makefile extracts Haskell source code to the `/haskell` subdirectory.
+
+```console
+> make extract
+coqc  Extraction.v
+Delete the old extracted files
+Prepend necessary imports to .hs files.
+Extracted Haskell Code and moved to subdirectory ./haskell
+```
+
+### Building using Docker
+
+Alternatively, the formalization can also be built using Docker with the provided `Dockerfile`.
+The Dockerfile builds the formalization and extracts the Haskell code. In order to get the files on your computer you have to copy them from a running container of the Docker image. The `build-with-docker.sh` shell script provides the necessary Docker incantations.
+
+Example (with cached results):
+
+```console
+./build-with-docker.sh
+Sending build context to Docker daemon  49.13MB
+Step 1/7 : FROM coqorg/coq:8.8.2
+ ---> 5af97f51b90b
+Step 2/7 : COPY *.v                ./
+ ---> Using cache
+ ---> 5dcf0d348d59
+Step 3/7 : COPY Makefile           .
+ ---> Using cache
+ ---> 39c6344ea17c
+Step 4/7 : COPY prepend-imports.sh .
+ ---> Using cache
+ ---> 053f73d7d5c5
+Step 5/7 : ENV PATH=$PATH:/home/coq/.opam/4.05.0/bin/
+ ---> Using cache
+ ---> f18977f52578
+Step 6/7 : RUN ["make", "-j", "4", "all"]
+ ---> Using cache
+ ---> 2c8adbb45fd5
+Step 7/7 : RUN ["make", "extract"]
+ ---> Using cache
+ ---> 0a5b0e7d75ab
+Successfully built 0a5b0e7d75ab
+Successfully tagged decomposition-diversity:latest
+c4598339a5e54ed0e8cb0f27da5d2c21fc8ac35afc94953f60d3f03f42ea8ee2
+decomposition-diversity-container
+decomposition-diversity-container
+```
+
 ## Dependencies
 
 ![Dependencies](Results.png)

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Prettyprinter.Definitions
   (
     PrettyPrinter
@@ -11,6 +12,7 @@ module Prettyprinter.Definitions
 import Data.Default
 import Data.Text.Prettyprint.Doc
 import Control.Monad.Reader
+import GHC.Generics
 
 import ProgramDef
 
@@ -26,7 +28,7 @@ data PrettyPrinterConfig = PrettyPrinterConfig {
   , printQualifiedNames :: Bool -- ^ Whether names are printed as "true" or "Bool:true"
   , printNat :: Bool            -- ^ Whether values of type Nat are printed as numerals.
   , printDeBruijn :: Bool       -- ^ Specifies whether deBruijn Index of variables is printed additionally.
-  }
+  } deriving (Generic)
 
 instance Default PrettyPrinterConfig where
   def = PrettyPrinterConfig {

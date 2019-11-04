@@ -5,6 +5,7 @@ FROM coqorg/coq:8.8.2
 COPY *.v                ./
 COPY Makefile           .
 COPY prepend-imports.sh .
+COPY additional_imports.txt .
 
 # Append the coq binaries to the path variable
 ENV PATH=$PATH:/home/coq/.opam/4.05.0/bin/

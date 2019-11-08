@@ -1,0 +1,31 @@
+/* Natural numbers*/
+data Nat where
+  Zero[]
+  Succ[Nat]
+ 
+data Bool where
+	true[]
+	false[]
+
+function getPrev(x:Nat):Nat :=
+	match Nat:_getPrev x returning Nat with
+		case Zero[] => 0
+		case Succ[prev] => prev
+
+function smaller(x:Nat, y:Nat):Bool:=
+	match Nat:_smaller x using a:=x,b:=y returning Bool with
+		case Zero[] => true[]
+		case Succ[prev] => smallerHelper(a, b)
+
+function smallerHelper(x:Nat, y:Nat):Bool :=
+	match Nat:_smallerHelper y using a:=x returning Bool with
+		case Zero[] => false[]
+		case Succ[prev] => smaller(getPrev(a),prev)
+		
+consumer function Nat:plus((x:Nat)):Nat:=
+  case Zero[] => x
+  case Succ[y] => Succ[y.plus((x))]
+
+consumer function Nat:omegaMatch(()):Nat :=
+	case Zero[] => Zero[]
+	case Succ[x] => Succ[x].omegaMatch(())

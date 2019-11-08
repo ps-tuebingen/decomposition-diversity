@@ -1,0 +1,19 @@
+version: "3"
+services:
+    json-api:
+        image: dabintue/decomposition-diversity-api:1.2
+        networks:
+            - decomp-div
+    ide:
+        image: dabintue/decomposition-diversity-ide:1.2
+        ports:
+            - "${HOST_PORT:-8080}:8080"
+        networks:
+            - decomp-div
+        depends_on:
+            - "json-api"
+
+networks:
+    decomp-div:
+        driver: bridge
+

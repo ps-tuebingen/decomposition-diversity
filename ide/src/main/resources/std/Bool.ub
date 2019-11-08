@@ -1,0 +1,7 @@
+data Bool where
+  true[]
+  false[]
+
+consumer function Bool:not(()) : Bool :=
+  case true[] => false[]
+  case false[] => true[]

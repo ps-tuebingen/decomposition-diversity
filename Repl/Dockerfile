@@ -43,8 +43,9 @@ COPY --from=dependencies /opt/build/libgmp.deb /tmp
 RUN dpkg -i /tmp/libgmp.deb && rm /tmp/libgmp.deb
 
 COPY --from=build /opt/build/bin .
+RUN ls
 
 EXPOSE 9999
 
-CMD ["/opt/decompositiondiversity/bin/Repl", "--json"]
+CMD ["/opt/decompositiondiversity/Repl", "--json"]
 

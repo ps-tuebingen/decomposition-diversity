@@ -1,0 +1,1289 @@
+[
+   [
+      [
+         "Nat",
+         "Bool"
+      ],
+      [
+         [
+            {
+               "tag" : "Coq_global",
+               "contents" : [
+                  "Nat",
+                  "Zero"
+               ]
+            },
+            []
+         ],
+         [
+            {
+               "contents" : [
+                  "Nat",
+                  "Succ"
+               ],
+               "tag" : "Coq_global"
+            },
+            [
+               "Nat"
+            ]
+         ],
+         [
+            {
+               "tag" : "Coq_global",
+               "contents" : [
+                  "Bool",
+                  "true"
+               ]
+            },
+            []
+         ],
+         [
+            {
+               "contents" : [
+                  "Bool",
+                  "false"
+               ],
+               "tag" : "Coq_global"
+            },
+            []
+         ]
+      ],
+      [
+         "NatStream"
+      ],
+      [
+         [
+            [
+               {
+                  "tag" : "Coq_global",
+                  "contents" : [
+                     "NatStream",
+                     "current"
+                  ]
+               },
+               []
+            ],
+            "Nat"
+         ],
+         [
+            [
+               {
+                  "contents" : [
+                     "NatStream",
+                     "next"
+                  ],
+                  "tag" : "Coq_global"
+               },
+               []
+            ],
+            "NatStream"
+         ]
+      ],
+      [
+         [
+            [
+               "three",
+               []
+            ],
+            "Nat"
+         ],
+         [
+            [
+               "constStream",
+               [
+                  "Nat"
+               ]
+            ],
+            "NatStream"
+         ],
+         [
+            [
+               "addStreamsStrict",
+               [
+                  "NatStream",
+                  "NatStream"
+               ]
+            ],
+            "NatStream"
+         ],
+         [
+            [
+               "omega",
+               []
+            ],
+            "Nat"
+         ]
+      ],
+      [
+         [
+            [
+               [
+                  "Nat",
+                  "plus"
+               ],
+               [
+                  "Nat"
+               ]
+            ],
+            "Nat"
+         ],
+         [
+            [
+               [
+                  "Nat",
+                  "getAtIndex"
+               ],
+               [
+                  "NatStream"
+               ]
+            ],
+            "Nat"
+         ],
+         [
+            [
+               [
+                  "Nat",
+                  "omegaMatch"
+               ],
+               []
+            ],
+            "Nat"
+         ]
+      ],
+      [
+         [
+            [
+               "NatStream",
+               "addToStream"
+            ],
+            [
+               "NatStream",
+               "Nat"
+            ]
+         ],
+         [
+            [
+               "NatStream",
+               "ascending"
+            ],
+            []
+         ],
+         [
+            [
+               "NatStream",
+               "addStreams"
+            ],
+            [
+               "NatStream",
+               "NatStream"
+            ]
+         ],
+         [
+            [
+               "NatStream",
+               "omegaComatch"
+            ],
+            []
+         ],
+         [
+            [
+               "NatStream",
+               "fibonacci"
+            ],
+            []
+         ],
+         [
+            [
+               "NatStream",
+               "shiftedFib"
+            ],
+            []
+         ]
+      ]
+   ],
+   [
+      [
+         "three",
+         {
+            "tag" : "E_Constr",
+            "contents" : [
+               {
+                  "contents" : [
+                     "Nat",
+                     "Succ"
+                  ],
+                  "tag" : "Coq_global"
+               },
+               [
+                  {
+                     "contents" : [
+                        {
+                           "tag" : "Coq_global",
+                           "contents" : [
+                              "Nat",
+                              "Succ"
+                           ]
+                        },
+                        [
+                           {
+                              "contents" : [
+                                 {
+                                    "tag" : "Coq_global",
+                                    "contents" : [
+                                       "Nat",
+                                       "Succ"
+                                    ]
+                                 },
+                                 [
+                                    {
+                                       "contents" : [
+                                          {
+                                             "tag" : "Coq_global",
+                                             "contents" : [
+                                                "Nat",
+                                                "Zero"
+                                             ]
+                                          },
+                                          []
+                                       ],
+                                       "tag" : "E_Constr"
+                                    }
+                                 ]
+                              ],
+                              "tag" : "E_Constr"
+                           }
+                        ]
+                     ],
+                     "tag" : "E_Constr"
+                  }
+               ]
+            ]
+         }
+      ],
+      [
+         "first",
+         {
+            "tag" : "E_Var",
+            "contents" : 0
+         }
+      ],
+      [
+         "second",
+         {
+            "tag" : "E_Var",
+            "contents" : 1
+         }
+      ],
+      [
+         "constStream",
+         {
+            "tag" : "E_CoMatch",
+            "contents" : [
+               [
+                  "NatStream",
+                  "constStream"
+               ],
+               1,
+               [
+                  [
+                     {
+                        "tag" : "E_Var",
+                        "contents" : 0
+                     },
+                     "Nat"
+                  ]
+               ],
+               [
+                  [
+                     [
+                        {
+                           "tag" : "Coq_global",
+                           "contents" : [
+                              "NatStream",
+                              "current"
+                           ]
+                        },
+                        0
+                     ],
+                     {
+                        "tag" : "E_Var",
+                        "contents" : 0
+                     }
+                  ],
+                  [
+                     [
+                        {
+                           "contents" : [
+                              "NatStream",
+                              "next"
+                           ],
+                           "tag" : "Coq_global"
+                        },
+                        0
+                     ],
+                     {
+                        "tag" : "E_FunCall",
+                        "contents" : [
+                           "constStream",
+                           [
+                              {
+                                 "contents" : 0,
+                                 "tag" : "E_Var"
+                              }
+                           ]
+                        ]
+                     }
+                  ]
+               ]
+            ]
+         }
+      ],
+      [
+         "addStreamsStrict",
+         {
+            "tag" : "E_Let",
+            "contents" : [
+               {
+                  "tag" : "E_DestrCall",
+                  "contents" : [
+                     {
+                        "contents" : [
+                           "NatStream",
+                           "current"
+                        ],
+                        "tag" : "Coq_global"
+                     },
+                     {
+                        "contents" : 0,
+                        "tag" : "E_Var"
+                     },
+                     []
+                  ]
+               },
+               {
+                  "contents" : [
+                     {
+                        "contents" : [
+                           {
+                              "contents" : [
+                                 "NatStream",
+                                 "current"
+                              ],
+                              "tag" : "Coq_global"
+                           },
+                           {
+                              "tag" : "E_Var",
+                              "contents" : 2
+                           },
+                           []
+                        ],
+                        "tag" : "E_DestrCall"
+                     },
+                     {
+                        "contents" : [
+                           {
+                              "contents" : [
+                                 {
+                                    "tag" : "Coq_global",
+                                    "contents" : [
+                                       "NatStream",
+                                       "next"
+                                    ]
+                                 },
+                                 {
+                                    "contents" : 2,
+                                    "tag" : "E_Var"
+                                 },
+                                 []
+                              ],
+                              "tag" : "E_DestrCall"
+                           },
+                           {
+                              "contents" : [
+                                 {
+                                    "contents" : [
+                                       {
+                                          "contents" : [
+                                             "NatStream",
+                                             "next"
+                                          ],
+                                          "tag" : "Coq_global"
+                                       },
+                                       {
+                                          "contents" : 4,
+                                          "tag" : "E_Var"
+                                       },
+                                       []
+                                    ],
+                                    "tag" : "E_DestrCall"
+                                 },
+                                 {
+                                    "tag" : "E_CoMatch",
+                                    "contents" : [
+                                       [
+                                          "NatStream",
+                                          "_addStreamsStrict"
+                                       ],
+                                       4,
+                                       [
+                                          [
+                                             {
+                                                "tag" : "E_Var",
+                                                "contents" : 3
+                                             },
+                                             "Nat"
+                                          ],
+                                          [
+                                             {
+                                                "tag" : "E_Var",
+                                                "contents" : 2
+                                             },
+                                             "Nat"
+                                          ],
+                                          [
+                                             {
+                                                "contents" : 1,
+                                                "tag" : "E_Var"
+                                             },
+                                             "NatStream"
+                                          ],
+                                          [
+                                             {
+                                                "tag" : "E_Var",
+                                                "contents" : 0
+                                             },
+                                             "NatStream"
+                                          ]
+                                       ],
+                                       [
+                                          [
+                                             [
+                                                {
+                                                   "tag" : "Coq_global",
+                                                   "contents" : [
+                                                      "NatStream",
+                                                      "current"
+                                                   ]
+                                                },
+                                                0
+                                             ],
+                                             {
+                                                "contents" : [
+                                                   [
+                                                      "Nat",
+                                                      "plus"
+                                                   ],
+                                                   {
+                                                      "contents" : 0,
+                                                      "tag" : "E_Var"
+                                                   },
+                                                   [
+                                                      {
+                                                         "contents" : 1,
+                                                         "tag" : "E_Var"
+                                                      }
+                                                   ]
+                                                ],
+                                                "tag" : "E_MatchFunCall"
+                                             }
+                                          ],
+                                          [
+                                             [
+                                                {
+                                                   "tag" : "Coq_global",
+                                                   "contents" : [
+                                                      "NatStream",
+                                                      "next"
+                                                   ]
+                                                },
+                                                0
+                                             ],
+                                             {
+                                                "tag" : "E_FunCall",
+                                                "contents" : [
+                                                   "addStreamsStrict",
+                                                   [
+                                                      {
+                                                         "contents" : 2,
+                                                         "tag" : "E_Var"
+                                                      },
+                                                      {
+                                                         "contents" : 3,
+                                                         "tag" : "E_Var"
+                                                      }
+                                                   ]
+                                                ]
+                                             }
+                                          ]
+                                       ]
+                                    ]
+                                 }
+                              ],
+                              "tag" : "E_Let"
+                           }
+                        ],
+                        "tag" : "E_Let"
+                     }
+                  ],
+                  "tag" : "E_Let"
+               }
+            ]
+         }
+      ],
+      [
+         "omega",
+         {
+            "tag" : "E_FunCall",
+            "contents" : [
+               "omega",
+               []
+            ]
+         }
+      ]
+   ],
+   [
+      [
+         [
+            "Nat",
+            "plus"
+         ],
+         [
+            [
+               [
+                  {
+                     "tag" : "Coq_global",
+                     "contents" : [
+                        "Nat",
+                        "Zero"
+                     ]
+                  },
+                  0
+               ],
+               {
+                  "contents" : 0,
+                  "tag" : "E_Var"
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "Nat",
+                        "Succ"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  1
+               ],
+               {
+                  "tag" : "E_Constr",
+                  "contents" : [
+                     {
+                        "tag" : "Coq_global",
+                        "contents" : [
+                           "Nat",
+                           "Succ"
+                        ]
+                     },
+                     [
+                        {
+                           "contents" : [
+                              [
+                                 "Nat",
+                                 "plus"
+                              ],
+                              {
+                                 "tag" : "E_Var",
+                                 "contents" : 0
+                              },
+                              [
+                                 {
+                                    "tag" : "E_Var",
+                                    "contents" : 1
+                                 }
+                              ]
+                           ],
+                           "tag" : "E_MatchFunCall"
+                        }
+                     ]
+                  ]
+               }
+            ]
+         ]
+      ],
+      [
+         [
+            "Nat",
+            "getAtIndex"
+         ],
+         [
+            [
+               [
+                  {
+                     "contents" : [
+                        "Nat",
+                        "Zero"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_DestrCall",
+                  "contents" : [
+                     {
+                        "contents" : [
+                           "NatStream",
+                           "current"
+                        ],
+                        "tag" : "Coq_global"
+                     },
+                     {
+                        "contents" : 0,
+                        "tag" : "E_Var"
+                     },
+                     []
+                  ]
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "Nat",
+                        "Succ"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  1
+               ],
+               {
+                  "contents" : [
+                     [
+                        "Nat",
+                        "getAtIndex"
+                     ],
+                     {
+                        "tag" : "E_Var",
+                        "contents" : 0
+                     },
+                     [
+                        {
+                           "contents" : [
+                              {
+                                 "contents" : [
+                                    "NatStream",
+                                    "next"
+                                 ],
+                                 "tag" : "Coq_global"
+                              },
+                              {
+                                 "tag" : "E_Var",
+                                 "contents" : 1
+                              },
+                              []
+                           ],
+                           "tag" : "E_DestrCall"
+                        }
+                     ]
+                  ],
+                  "tag" : "E_MatchFunCall"
+               }
+            ]
+         ]
+      ],
+      [
+         [
+            "Nat",
+            "omegaMatch"
+         ],
+         [
+            [
+               [
+                  {
+                     "tag" : "Coq_global",
+                     "contents" : [
+                        "Nat",
+                        "Zero"
+                     ]
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_Constr",
+                  "contents" : [
+                     {
+                        "tag" : "Coq_global",
+                        "contents" : [
+                           "Nat",
+                           "Zero"
+                        ]
+                     },
+                     []
+                  ]
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "Nat",
+                        "Succ"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  1
+               ],
+               {
+                  "tag" : "E_MatchFunCall",
+                  "contents" : [
+                     [
+                        "Nat",
+                        "omegaMatch"
+                     ],
+                     {
+                        "tag" : "E_Constr",
+                        "contents" : [
+                           {
+                              "contents" : [
+                                 "Nat",
+                                 "Succ"
+                              ],
+                              "tag" : "Coq_global"
+                           },
+                           [
+                              {
+                                 "contents" : 0,
+                                 "tag" : "E_Var"
+                              }
+                           ]
+                        ]
+                     },
+                     []
+                  ]
+               }
+            ]
+         ]
+      ]
+   ],
+   [
+      [
+         [
+            "NatStream",
+            "addToStream"
+         ],
+         [
+            [
+               [
+                  {
+                     "tag" : "Coq_global",
+                     "contents" : [
+                        "NatStream",
+                        "current"
+                     ]
+                  },
+                  0
+               ],
+               {
+                  "contents" : [
+                     [
+                        "Nat",
+                        "plus"
+                     ],
+                     {
+                        "tag" : "E_Var",
+                        "contents" : 1
+                     },
+                     [
+                        {
+                           "contents" : [
+                              {
+                                 "tag" : "Coq_global",
+                                 "contents" : [
+                                    "NatStream",
+                                    "current"
+                                 ]
+                              },
+                              {
+                                 "tag" : "E_Var",
+                                 "contents" : 0
+                              },
+                              []
+                           ],
+                           "tag" : "E_DestrCall"
+                        }
+                     ]
+                  ],
+                  "tag" : "E_MatchFunCall"
+               }
+            ],
+            [
+               [
+                  {
+                     "tag" : "Coq_global",
+                     "contents" : [
+                        "NatStream",
+                        "next"
+                     ]
+                  },
+                  0
+               ],
+               {
+                  "contents" : [
+                     [
+                        "NatStream",
+                        "addToStream"
+                     ],
+                     [
+                        {
+                           "contents" : [
+                              {
+                                 "tag" : "Coq_global",
+                                 "contents" : [
+                                    "NatStream",
+                                    "next"
+                                 ]
+                              },
+                              {
+                                 "contents" : 0,
+                                 "tag" : "E_Var"
+                              },
+                              []
+                           ],
+                           "tag" : "E_DestrCall"
+                        },
+                        {
+                           "tag" : "E_Var",
+                           "contents" : 1
+                        }
+                     ]
+                  ],
+                  "tag" : "E_ComatchFunCall"
+               }
+            ]
+         ]
+      ],
+      [
+         [
+            "NatStream",
+            "ascending"
+         ],
+         [
+            [
+               [
+                  {
+                     "tag" : "Coq_global",
+                     "contents" : [
+                        "NatStream",
+                        "current"
+                     ]
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_Constr",
+                  "contents" : [
+                     {
+                        "contents" : [
+                           "Nat",
+                           "Zero"
+                        ],
+                        "tag" : "Coq_global"
+                     },
+                     []
+                  ]
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "NatStream",
+                        "next"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_ComatchFunCall",
+                  "contents" : [
+                     [
+                        "NatStream",
+                        "addToStream"
+                     ],
+                     [
+                        {
+                           "contents" : [
+                              [
+                                 "NatStream",
+                                 "ascending"
+                              ],
+                              []
+                           ],
+                           "tag" : "E_ComatchFunCall"
+                        },
+                        {
+                           "tag" : "E_Constr",
+                           "contents" : [
+                              {
+                                 "contents" : [
+                                    "Nat",
+                                    "Succ"
+                                 ],
+                                 "tag" : "Coq_global"
+                              },
+                              [
+                                 {
+                                    "contents" : [
+                                       {
+                                          "contents" : [
+                                             "Nat",
+                                             "Zero"
+                                          ],
+                                          "tag" : "Coq_global"
+                                       },
+                                       []
+                                    ],
+                                    "tag" : "E_Constr"
+                                 }
+                              ]
+                           ]
+                        }
+                     ]
+                  ]
+               }
+            ]
+         ]
+      ],
+      [
+         [
+            "NatStream",
+            "addStreams"
+         ],
+         [
+            [
+               [
+                  {
+                     "contents" : [
+                        "NatStream",
+                        "current"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "contents" : [
+                     [
+                        "Nat",
+                        "plus"
+                     ],
+                     {
+                        "contents" : [
+                           {
+                              "tag" : "Coq_global",
+                              "contents" : [
+                                 "NatStream",
+                                 "current"
+                              ]
+                           },
+                           {
+                              "tag" : "E_Var",
+                              "contents" : 0
+                           },
+                           []
+                        ],
+                        "tag" : "E_DestrCall"
+                     },
+                     [
+                        {
+                           "tag" : "E_DestrCall",
+                           "contents" : [
+                              {
+                                 "contents" : [
+                                    "NatStream",
+                                    "current"
+                                 ],
+                                 "tag" : "Coq_global"
+                              },
+                              {
+                                 "contents" : 1,
+                                 "tag" : "E_Var"
+                              },
+                              []
+                           ]
+                        }
+                     ]
+                  ],
+                  "tag" : "E_MatchFunCall"
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "NatStream",
+                        "next"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_ComatchFunCall",
+                  "contents" : [
+                     [
+                        "NatStream",
+                        "addStreams"
+                     ],
+                     [
+                        {
+                           "contents" : [
+                              {
+                                 "tag" : "Coq_global",
+                                 "contents" : [
+                                    "NatStream",
+                                    "next"
+                                 ]
+                              },
+                              {
+                                 "tag" : "E_Var",
+                                 "contents" : 0
+                              },
+                              []
+                           ],
+                           "tag" : "E_DestrCall"
+                        },
+                        {
+                           "tag" : "E_DestrCall",
+                           "contents" : [
+                              {
+                                 "contents" : [
+                                    "NatStream",
+                                    "next"
+                                 ],
+                                 "tag" : "Coq_global"
+                              },
+                              {
+                                 "contents" : 1,
+                                 "tag" : "E_Var"
+                              },
+                              []
+                           ]
+                        }
+                     ]
+                  ]
+               }
+            ]
+         ]
+      ],
+      [
+         [
+            "NatStream",
+            "omegaComatch"
+         ],
+         [
+            [
+               [
+                  {
+                     "tag" : "Coq_global",
+                     "contents" : [
+                        "NatStream",
+                        "current"
+                     ]
+                  },
+                  0
+               ],
+               {
+                  "contents" : [
+                     "omega",
+                     []
+                  ],
+                  "tag" : "E_FunCall"
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "NatStream",
+                        "next"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_DestrCall",
+                  "contents" : [
+                     {
+                        "tag" : "Coq_global",
+                        "contents" : [
+                           "NatStream",
+                           "next"
+                        ]
+                     },
+                     {
+                        "tag" : "E_ComatchFunCall",
+                        "contents" : [
+                           [
+                              "NatStream",
+                              "omegaComatch"
+                           ],
+                           []
+                        ]
+                     },
+                     []
+                  ]
+               }
+            ]
+         ]
+      ],
+      [
+         [
+            "NatStream",
+            "fibonacci"
+         ],
+         [
+            [
+               [
+                  {
+                     "contents" : [
+                        "NatStream",
+                        "current"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "contents" : [
+                     {
+                        "tag" : "Coq_global",
+                        "contents" : [
+                           "Nat",
+                           "Zero"
+                        ]
+                     },
+                     []
+                  ],
+                  "tag" : "E_Constr"
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "NatStream",
+                        "next"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "contents" : [
+                     [
+                        "NatStream",
+                        "shiftedFib"
+                     ],
+                     []
+                  ],
+                  "tag" : "E_ComatchFunCall"
+               }
+            ]
+         ]
+      ],
+      [
+         [
+            "NatStream",
+            "shiftedFib"
+         ],
+         [
+            [
+               [
+                  {
+                     "tag" : "Coq_global",
+                     "contents" : [
+                        "NatStream",
+                        "current"
+                     ]
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_Constr",
+                  "contents" : [
+                     {
+                        "contents" : [
+                           "Nat",
+                           "Succ"
+                        ],
+                        "tag" : "Coq_global"
+                     },
+                     [
+                        {
+                           "contents" : [
+                              {
+                                 "tag" : "Coq_global",
+                                 "contents" : [
+                                    "Nat",
+                                    "Zero"
+                                 ]
+                              },
+                              []
+                           ],
+                           "tag" : "E_Constr"
+                        }
+                     ]
+                  ]
+               }
+            ],
+            [
+               [
+                  {
+                     "contents" : [
+                        "NatStream",
+                        "next"
+                     ],
+                     "tag" : "Coq_global"
+                  },
+                  0
+               ],
+               {
+                  "tag" : "E_ComatchFunCall",
+                  "contents" : [
+                     [
+                        "NatStream",
+                        "addStreams"
+                     ],
+                     [
+                        {
+                           "contents" : [
+                              [
+                                 "NatStream",
+                                 "fibonacci"
+                              ],
+                              []
+                           ],
+                           "tag" : "E_ComatchFunCall"
+                        },
+                        {
+                           "tag" : "E_ComatchFunCall",
+                           "contents" : [
+                              [
+                                 "NatStream",
+                                 "shiftedFib"
+                              ],
+                              []
+                           ]
+                        }
+                     ]
+                  ]
+               }
+            ]
+         ]
+      ]
+   ]
+]

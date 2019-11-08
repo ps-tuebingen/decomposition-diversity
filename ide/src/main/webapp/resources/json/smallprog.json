@@ -1,0 +1,41 @@
+[
+    [
+        ["Nat"],
+        [[{"tag":"Coq_global","contents":["Nat","Zero"]},[]],[{"tag":"Coq_global","contents":["Nat","Succ"]},["Nat"]]],
+        [],
+        [],
+        [[["three",[]],"Nat"],[["one",[]],"Nat"]],
+        [[[["Nat","plus"],["Nat"]],"Nat"]],
+        []
+    ],
+    [
+        ["three",{"tag":"E_Constr","contents":[{"tag":"Coq_global","contents":["Nat","Succ"]},[{"tag":"E_Constr","contents":[{"tag":"Coq_global","contents":["Nat","Succ"]},[{"tag":"E_Constr","contents":[{"tag":"Coq_global","contents":["Nat","Succ"]},[{"tag":"E_Constr","contents":[{"tag":"Coq_global","contents":["Nat","Zero"]},[]]}]]}]]}]]}],
+        ["one",{"tag":"E_Constr","contents":[{"tag":"Coq_global","contents":["Nat","Succ"]},[{"tag":"E_Constr","contents":[{"tag":"Coq_global","contents":["Nat","Zero"]},[]]}]]}]
+    ],
+    [
+        [
+            ["Nat","plus"],
+            [
+                [[{"tag":"Coq_global","contents":["Nat","Zero"]},0],{"tag":"E_Var","contents":0}],
+                [
+                    [{"tag":"Coq_global","contents":["Nat","Succ"]},1],
+                    {   "tag":"E_Constr",
+                        "contents":[
+                            {"tag":"Coq_global","contents":["Nat","Succ"]},
+                            [
+                                {   "tag":"E_MatchFunCall",
+                                    "contents":[
+                                        ["Nat","plus"],
+                                        {"tag":"E_Var","contents":0},
+                                        [{"tag":"E_Var","contents":1}]
+                                    ]
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            ]
+        ]
+    ],
+    []
+]

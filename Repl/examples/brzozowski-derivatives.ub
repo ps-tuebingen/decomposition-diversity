@@ -1,0 +1,51 @@
+data Bool where
+   True()
+   False()
+data Nat where
+   Z()
+   S(Nat)
+cfun Nat:eq(m: Nat) : Bool :=
+  case Z() =>
+    match Nat:eqZ m returning Bool with
+      case Z() => True()
+      case S(m0) => False()
+  case S(n) =>
+    match Nat:eqS m using n := n : Nat returning Bool with
+      case Z() => False()
+      case S(m) => n.eq(m)
+cfun Bool:ite(r : Regex, s : Regex) : Regex :=
+    case True() => r
+    case False() => s
+
+data Regex where
+   Zero()
+   One()
+   Atom(Nat)
+   Plus(Regex, Regex)
+   Times(Regex, Regex)
+   Star(Regex)
+
+cfun Bool:and(x : Bool) : Bool :=
+    case True() => x
+    case False() => False()
+
+cfun Bool:or(x : Bool) : Bool :=
+    case True() => True()
+    case False() => x
+
+cfun Regex:epsilon() : Bool :=
+   case Zero() => False()
+   case One() => True()
+   case Atom(n) => False()
+   case Plus(r, s) => r.epsilon().or(s.epsilon())
+   case Times(r, s) => r.epsilon().and(s.epsilon())
+   case Star(r) => True()
+
+cfun Regex:delta(n : Nat) : Regex :=
+   case Zero() => Zero()
+   case One() => Zero()
+   case Atom(m) => m.eq(n).ite(One(), Zero())
+   case Plus(r, s) => Plus(r.delta(n), s.delta(n))
+   case Times(r, s) => let rs := Times(r.delta(n), s)
+                       in r.epsilon().ite(Plus(rs, s.delta(n)), rs)
+   case Star(r) => Times (r.delta(n), Star(r))

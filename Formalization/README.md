@@ -1,4 +1,6 @@
-# Formalization of total Constructorization / Destructorization
+# Decomposition Diversity Formalization
+
+The results of the formalization are collected in `Results.v`; please refer to this file to understand how we validated the theorems stated in our paper.
 
 ## How to build
 
@@ -6,7 +8,7 @@ There are two ways to build the Coq formalization: either directly on your compu
 
 ### Building locally
 
-Building locally presupposes that you have a current version of Coq installed. We verified that the project builds with Coq 8.8.2.
+Building locally presupposes that you have a current version of Coq installed. We verified that the project builds with Coq 8.8.2 and Coq 8.9.1.
 
 The Makefile provides an `all` target which builds all parts relevant to the proofs.
 

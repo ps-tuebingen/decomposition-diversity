@@ -68,16 +68,16 @@ onestepEval = toMethod "onestepEval" f (Required "Coq_program" :+: Required "exp
     where f :: Coq_program -> Coq_expr -> RpcResult IO Coq_expr
           f prog expr = case one_step_eval prog expr of
                           Just e -> return e
-                          Nothing -> throwError $ rpcError (-32002) "One_step_eval failed\nEither the input was a value or there is a bug"
+                          Nothing -> throwError $ rpcError (-32002) "OnestepEval failed:\nEither the input was a value or there is a bug"
 
 refuncProgram :: Method IO
-refuncProgram = toMethod "refunctionalize" f (Required "Coq_program" :+: Required "typename" :+: ())
+refuncProgram = toMethod "destructorize" f (Required "Coq_program" :+: Required "typename" :+: ())
     where f :: Coq_program -> TypeName -> RpcResult IO Coq_program
           f prog tn = return $ dtorize tn prog
 
 
 defuncProgram :: Method IO
-defuncProgram = toMethod "defunctionalize" f (Required "Coq_program" :+: Required "typename" :+: ())
+defuncProgram = toMethod "constructorize" f (Required "Coq_program" :+: Required "typename" :+: ())
     where f :: Coq_program -> TypeName -> RpcResult IO Coq_program
           f prog tn = return $ ctorize tn prog
 

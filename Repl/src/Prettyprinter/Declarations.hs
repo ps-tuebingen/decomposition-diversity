@@ -17,12 +17,13 @@ import ProgramDef
 import Renamer.DeBruijnToNamed (deBruijnToNamed')
 import Renamer.CoqToDeBruijn (coqToDeBruijn, lookupArgs)
 import Skeleton
+import           Control.Monad.Reader
 
 -- | Print argument list of toplevel declarations.
 --  (x1 : T1, .. , xn : Tn)
 argumentListToDoc :: [TypeName] -> PrettyPrinter
 argumentListToDoc args = do
-  let x = (\(n,t) -> pretty (generateName n ++ " : " ++ t)) <$> (zip [0..] args)
+  let x = (\(n,t) -> pretty (generateName 0 n ++ " : " ++ t)) <$> (zip [0..] args)
   return $ parens (hsep (intersperse comma x))
 
 {---------------------------------------------
@@ -51,7 +52,7 @@ renameFunctionDeclaration :: Coq_skeleton
                           -> Either String (Name, [TypeName], TypeName, ExprNamed)
 renameFunctionDeclaration sk (n, argts, rtype, body) = do
   renamedBody <- coqToDeBruijn sk body
-  renamedBody' <- deBruijnToNamed' (fromToNames 0 (length argts -1)) renamedBody
+  renamedBody' <- flip runReaderT 1 $ deBruijnToNamed' (fromToNames 0 0 (length argts -1)) renamedBody
   return (n, argts, rtype, renamedBody')
 
 -- | Prettyprint a single function declaration.
@@ -115,9 +116,9 @@ renameConsumerFunctionDeclaration2 :: Coq_skeleton
 renameConsumerFunctionDeclaration2 sk (qn, argts, rtype, cases) = do
   let f (sn, argts', e) = do
         eDB <- coqToDeBruijn sk e
-        let nameArg1 = fromToNames 0              (length argts - 1)
-        let nameArg2 = fromToNames (length argts) (length (argts ++ argts') - 1)
-        eN <- deBruijnToNamed'  (nameArg2 ++ nameArg1) eDB
+        let nameArg1 = fromToNames 0 0              (length argts - 1)
+        let nameArg2 = fromToNames 0 (length argts) (length (argts ++ argts') - 1)
+        eN <- flip runReaderT 1 $ deBruijnToNamed'  (nameArg2 ++ nameArg1) eDB
         return (sn,nameArg2 , eN)
   cases' <- sequence $ f <$> cases
   return (qn, argts, rtype, cases')
@@ -189,9 +190,9 @@ renameGeneratorFunctionDeclaration2 :: Coq_skeleton
 renameGeneratorFunctionDeclaration2 sk (qn, argts, cases) = do
   let f (sn,argts', e) = do
         eDB <- coqToDeBruijn sk e
-        let nameArg1 = fromToNames 0              (length argts - 1)
-        let nameArg2 = fromToNames (length argts) (length (argts ++ argts') - 1)
-        eN <- deBruijnToNamed' (nameArg2 ++ nameArg1) eDB
+        let nameArg1 = fromToNames 0 0              (length argts - 1)
+        let nameArg2 = fromToNames 0 (length argts) (length (argts ++ argts') - 1)
+        eN <- flip runReaderT 1 $ deBruijnToNamed' (nameArg2 ++ nameArg1) eDB
         return (sn, nameArg2, eN)
   cases' <- sequence $ f <$> cases
   return (qn, argts, cases')

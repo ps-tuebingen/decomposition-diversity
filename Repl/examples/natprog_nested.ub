@@ -77,7 +77,7 @@ gfun ShiftedFib() : NatStream :=
    cocase next() => AddStreams(Fibonacci() , ShiftedFib())
 
 fun isZero(x : Nat) : Bool :=
-  match Nat:isZero x returning Bool with
+  match Nat:isZeroL x returning Bool with
     case Zero() => True()
     case Succ(y) => False()
 

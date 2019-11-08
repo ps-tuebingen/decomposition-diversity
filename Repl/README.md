@@ -1,14 +1,19 @@
-# "Decomposition Diversity" REPL
-
-## Extracted Haskell Code
-The Haskell files in the subdirectory `extracted` should not be modified, since they are automatically extracted from the Coq formalization.
+# Decomposition Diversity REPL
 
 ## Build Instructions
-In order to keep the Coq formalization and the Haskell code in sync, do not build these files yourself.
-Use the `Makefile` in the parent directory.
+
+Building the REPL locally requires that `stack` is installed on your computer.
+
+Use
+
+```console
+stack build
+stack exec Repl
+```
+to build and run the REPL.
 
 ## Usage
-The REPL can be run via `stack exec Repl`.
+
 Help is available by typing `:help` inside the REPL.
 
 - Typing `:load <filename>` will load the program in the given file inside the REPL and typecheck it.

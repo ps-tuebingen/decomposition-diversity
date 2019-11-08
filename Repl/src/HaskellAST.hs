@@ -52,9 +52,13 @@ checkClosed n (CoMatch _ bl cases) =
   (all (==True) ((\(_,bs,e) -> checkClosed (toInteger (length bl + length bs)) e) <$> cases))
 checkClosed n (Let _ e1 e2) = checkClosed n e1 && checkClosed (n + 1) e2
 
+generatePrefix :: Int -> String
+generatePrefix j = chars !! j
+  where
+    chars = map (:[]) ("xyz" ++ ['a'..'w']) ++ map ('x':) chars
 
-generateName :: Int -> String
-generateName i = "x" ++ (show i)
+generateName :: Int -> Int -> String
+generateName o i = generatePrefix o ++ (show i)
 
-fromToNames :: Int -> Int -> [String]
-fromToNames i j = generateName <$> [i..j]
+fromToNames :: Int -> Int -> Int -> [String]
+fromToNames o i j = generateName o <$> [i..j]

@@ -19,11 +19,15 @@ codata Env where
 codata Exp where
   eval(Env) : Val
 
+fun idVal(v : Val) : Val :=
+    v
+
 gfun Cons(v: Val, env: Env) : Env :=
-  cocase index(i) =>
+  cocase index(i) => idVal(
     match Nat:lookup i using v1 := v : Val, e := env : Env returning Val with
        case Zero() => v1
        case Succ(n) => e.index(n)
+    )
 
 gfun Nil() : Env :=
   cocase index(i) => Nil().index(i)

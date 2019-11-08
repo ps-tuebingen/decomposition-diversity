@@ -8,28 +8,16 @@ data Stream where
   _L2()
   _L3()
 
-/* cfun Stream:d1(()) : Bool := */
-  /* case Simpl() => False() */
-  /* case _L1() => True() */
-  /* case _L2() => False() */
-  /* case _L3() => False() */
-/* cfun Stream:d2(()) : Bool := */
-  /* case Simpl() => False() */
-  /* case _L1() => False() */
-  /* case _L2() => True() */
-  /* case _L3() => False() */
-/* cfun Stream:d3(()) : Bool := */
-  /* case Simpl() => False() */
-  /* case _L1() => False() */
-  /* case _L2() => False() */
-  /* case _L3() => True() */
+fun idStream(s : Stream) : Stream :=
+    s
+
 cfun Stream:s() : Stream :=
   case Simpl() => Simpl()
-  case _L1() => _L3()
-  case _L2() => _L1()
+  case _L1() => idStream(_L3())
+  case _L2() => idStream(_L1())
   case _L3() => Simpl()
 cfun Stream:s2() : Stream :=
-  case Simpl() => _L2()
+  case Simpl() => idStream(_L2())
   case _L1() => Simpl()
   case _L2() => Simpl()
   case _L3() => Simpl()

@@ -30,25 +30,25 @@ codata Value2Found where
 fun search(e : Expr) : Found :=
  e.searchPos( comatch Value2Found:EmptyCtx  with
                  cocase apply(v) => FoundValue(v)
-                 cocase combine(e) => e
+                 cocase combine(ex) => ex
             )
 
 cfun Expr:searchPos(ctx : Value2Found) : Found :=
    case EVar(id) => ctx.apply(ValPosVar(id))
    case ENot(e) => e.searchNeg(ctx)
-   case EAnd(e1,e2) => e1.searchPos( comatch Value2Found:AndCtx1 using e2 := e2 : Expr , ctx := ctx : Value2Found with
-                                              cocase apply(v1) => e2.searchPos( comatch Value2Found:AndCtx2 using v1 := v1 : Value , ctx := ctx : Value2Found with
-                                                                                         cocase apply(v2) => ctx.apply(ValAnd(v1 ,v2))
-                                                                                         cocase combine(ex) => EAnd(v1.asExpr() , ctx.combine(ex))
+   case EAnd(e1,e2) => e1.searchPos( comatch Value2Found:AndCtx1 using e3 := e2 : Expr , ctx1 := ctx : Value2Found with
+                                              cocase apply(v1) => e3.searchPos( comatch Value2Found:AndCtx2 using v11 := v1 : Value , ctx2 := ctx1 : Value2Found with
+                                                                                         cocase apply(v2) => ctx2.apply(ValAnd(v11 ,v2))
+                                                                                         cocase combine(ex) => EAnd(v11.asExpr() , ctx2.combine(ex))
 								              )
-                                              cocase combine(ex) => EAnd(ctx.combine(ex) , e2)
+                                              cocase combine(ex) => EAnd(ctx1.combine(ex) , e3)
 				   )
-   case EOr(e1,e2) => e1.searchPos( comatch Value2Found:OrCtx1 using e2 := e2 : Expr , ctx := ctx : Value2Found with
-                                              cocase apply(v1) => e2.searchPos(comatch Value2Found:OrCtx4 using v1 := v1 : Value , ctx := ctx : Value2Found with
-                                                                                         cocase apply(v2) => ctx.apply(ValOr(v1, v2))
-                                                                                         cocase combine(ex) => EOr(v1.asExpr() , ctx.combine(ex))
+   case EOr(e1,e2) => e1.searchPos( comatch Value2Found:OrCtx1 using e3 := e2 : Expr , ctx1 := ctx : Value2Found with
+                                              cocase apply(v1) => e3.searchPos(comatch Value2Found:OrCtx4 using v11 := v1 : Value , ctx2 := ctx1 : Value2Found with
+                                                                                         cocase apply(v2) => ctx2.apply(ValOr(v11, v2))
+                                                                                         cocase combine(ex) => EOr(v11.asExpr() , ctx2.combine(ex))
 									      )
-                                              cocase combine(ex) => EOr(ctx.combine(ex) , e2)
+                                              cocase combine(ex) => EOr(ctx1.combine(ex) , e3)
 			          )
 
 cfun Expr:searchNeg(ctx : Value2Found) : Found :=

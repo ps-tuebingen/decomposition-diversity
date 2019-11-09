@@ -43,25 +43,29 @@ Definition extract_local_cfuns_program (p : program) : list QName :=
   ++ (flat_map extract_local_cfuns_expr (map snd (flat_map snd (program_gfun_bods_g p))))
   ++ (flat_map extract_local_cfuns_expr (map snd (flat_map snd (program_cfun_bods_g p)))).
   
+Fixpoint extract_cfuns_depth_one (cs: cfun_bods) (qn : QName) : list QName :=
+  match cs with
+  | [] => []
+  | ((qn',e) :: cs') =>
+    if eq_QName qn qn'
+    then flat_map (fun x => extract_local_cfuns_expr (snd x)) e
+    else extract_cfuns_depth_one cs' qn
+  end.
+
+Fixpoint extract_cfuns_by_depth (fuel : nat) (cs : cfun_bods) (qns: list QName) : list QName :=
+  match fuel with
+  | 0 => []
+  | S n => let new_qns := map (extract_cfuns_depth_one cs) qns in
+          let new_cs  := filter (fun bod => negb (existsb (eq_QName (fst bod)) (concat new_qns))) cs in
+          let new_rec := map (extract_cfuns_by_depth n new_cs) new_qns in
+          concat (zipWith cons qns new_rec)
+  end.
+
 Definition sort_cfuns_for_inline (p : program) (cs: cfun_bods) : cfun_bods :=
   let qns := extract_local_cfuns_program p in
   let fuel := length cs in
-  let fix extract_new cs qn :=
-      match cs with
-      | [] => []
-      | (c::cs') =>
-        if eq_QName qn (fst c)
-        then flat_map (fun x => extract_local_cfuns_expr (snd x)) (snd c)
-        else extract_new cs' qn
-      end in
-  let fix worker n qns :=
-      match n with
-      | 0 => []
-      | S n => let new_qns := map (extract_new cs) qns in
-              let new_rec := map (worker n) new_qns in
-              concat (zipWith cons qns new_rec)
-      end in
-  sort_by_index_list (fun qn bod => eq_QName qn (fst bod))  (worker fuel qns) cs.
+  sort_by_index_list (fun qn bod => eq_QName qn (fst bod))  (extract_cfuns_by_depth fuel cs qns) cs.
+
 
 Lemma sort_cfuns_for_inline_permutes: forall (p : program),
     Permutation (program_cfun_bods_l p) (sort_cfuns_for_inline p (program_cfun_bods_l p)).

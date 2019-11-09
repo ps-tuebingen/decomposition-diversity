@@ -53,3 +53,7 @@ After running
 
 the IDE will be available under `localhost:$PORT/decompositiondiversity`.
 
+### Notes on the IDE
+
+- It is a proof of concept that still contains a few bugs which we documented in issues in this repository.
+- The IDE originated as a project worked on by a master student supervised by our research group

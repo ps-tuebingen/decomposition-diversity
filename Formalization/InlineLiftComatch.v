@@ -66,6 +66,55 @@ Definition sort_gfuns_for_inline (p : program) (cs: gfun_bods) : gfun_bods :=
   let fuel := length cs in
   sort_by_index_list (fun qn bod => eq_QName qn (fst bod))  (extract_gfuns_by_depth fuel cs qns) cs.
 
+Lemma extract_gfuns_depth_one_unique: forall (cs : gfun_bods) (qn : QName),
+    unique (flat_map extract_local_gfuns_expr (map snd (flat_map snd cs))) ->
+    unique (extract_gfuns_depth_one cs qn).
+Proof.
+  intros cs qn H_uniq.
+  induction cs; simpl; auto.
+  destruct a as [qn_a e_a]; simpl in *.
+  rewrite map_app in H_uniq;
+    rewrite flat_map_app in H_uniq;
+    unique_app_destr_tac.
+  match_destruct_tac; auto.
+  clear - H_uniq0.
+  rewrite flat_map_concat_map in *.
+  rewrite map_compose in H_uniq0; auto.
+Qed.
+
+
+Lemma extract_gfuns_by_depth_permutes: forall p : program,
+    
+    unique ((flat_map extract_local_gfuns_expr (map snd (flat_map snd (program_gfun_bods_l p))))
+              ++ (extract_local_gfuns_program p)) ->
+    Permutation (extract_gfuns_by_depth (length (program_gfun_bods_l p)) (program_gfun_bods_l p) (extract_local_gfuns_program p)) (map fst (program_gfun_bods_l p)).
+Proof.
+  intros p H_uniq.
+  generalize dependent (extract_local_gfuns_program p).
+  intro orig_qns; intros.
+  pose proof (skeleton_gfun_sigs_names_unique_l (program_skeleton p)) as H_uniq_gfuns;
+    pose proof (program_has_all_gfun_bods_l p);
+    unfold gfun_sigs_names_unique in H_uniq_gfuns; unfold has_all_gfun_bods in H;
+      rewrite H in H_uniq_gfuns; clear H.
+  unfold extract_gfuns_by_depth in *; simpl.
+
+  induction (program_gfun_bods_l p) as [| bod bods]; auto.
+  simpl in H_uniq_gfuns.
+  inversion_clear H_uniq_gfuns as [| _x _xx H_nin H_uniq_bod].
+Admitted. (* check Results.v for details on missing proofs *)
+    
+Lemma sort_gfuns_for_inline_permutes': forall (p : program),
+    unique (flat_map extract_local_gfuns_expr (map snd (flat_map snd (program_gfun_bods_l p))) ++ extract_local_gfuns_program p) ->
+    Permutation (program_gfun_bods_l p) (sort_gfuns_for_inline p (program_gfun_bods_l p)).
+Proof.
+  intros p H.
+  unfold sort_gfuns_for_inline.
+  apply sort_by_index_list_permutes.
+  exists fst.
+  split; [ | symmetry; apply eq_QName_eq].
+  apply extract_gfuns_by_depth_permutes; easy.
+Qed.
+
 Lemma sort_gfuns_for_inline_permutes: forall (p : program),
     Permutation (program_gfun_bods_l p) (sort_gfuns_for_inline p (program_gfun_bods_l p)).
 Proof.

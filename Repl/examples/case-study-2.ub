@@ -1,0 +1,70 @@
+/* General: */
+
+data Identifier where
+     Tik()
+     Tok(Identifier)
+
+data Expr where
+    EVar(Identifier)
+    ENot(Expr)
+    EAnd(Expr, Expr)
+    EOr(Expr, Expr)
+
+data Value where
+     ValPosVar(Identifier)
+     ValNegVar(Identifier)
+     ValAnd(Value, Value)
+     ValOr(Value, Value)
+
+data Redex where
+    RedNot(Expr)
+    RedAnd(Expr, Expr)
+    RedOr(Expr, Expr)
+
+cfun Value:asExpr() : Expr :=
+  case ValPosVar(id) => EVar(id)
+  case ValNegVar(id) => ENot(EVar(id))
+  case ValAnd(e1,e2) => EAnd(e1.asExpr(), e2.asExpr())
+  case ValOr(e1,e2)  => EOr(e1.asExpr(), e2.asExpr())
+
+cfun Redex:eval() : Expr :=
+  case RedNot(e)     => e
+  case RedAnd(e1,e2) => EOr(ENot(e1), ENot(e2))
+  case RedOr(e1,e2)  => EAnd(ENot(e1), ENot(e2))
+
+/* Specific to this step: */
+/* After constructorizing "Value2Found" from case-study-1.ub */
+
+data Found where
+    FoundValue(Value)
+    FoundRedex(Redex)
+
+data Value2Found where
+   _BaseCnt()
+   _AndCnt1(Expr , Value2Found)
+   _AndCnt2(Value , Value2Found)
+   _OrCnt1(Expr , Value2Found)
+   _OrCnt2(Value , Value2Found)
+
+cfun Expr:searchNeg(ctx : Value2Found) : Found :=
+	 case EVar(n)     => ctx.apply(ValNegVar(n))
+	 case ENot(e)     => FoundRedex(RedNot(e))
+	 case EAnd(e1,e2) => FoundRedex(RedAnd(e1,e2))
+	 case EOr(e1,e2)  => FoundRedex(RedOr(e1,e2))
+
+cfun Expr:searchPos(ctx : Value2Found) : Found :=
+   case EVar(id)     => ctx.apply(ValPosVar(id))
+   case ENot(e)      => e.searchNeg(ctx)
+   case EAnd(e1, e2) => e1.searchPos(_AndCnt1(e2 , ctx))
+   case EOr(e1 , e2) => e1.searchPos(_OrCnt1(e2 , ctx))
+
+
+fun search(e : Expr) : Found :=
+  e.searchPos(_BaseCnt())
+
+cfun Value2Found:apply(v : Value) : Found :=
+   case _BaseCnt() => FoundValue(v)
+   case _AndCnt1(e, cnt) => e.searchPos(_AndCnt2(v, cnt))
+   case _AndCnt2(v2, cnt) => cnt.apply(ValAnd(v2, v))
+   case _OrCnt1(e, cnt) => e.searchPos(_OrCnt2(v, cnt))
+   case _OrCnt2(v2, cnt) => cnt.apply(ValOr(v2, v))

@@ -1,3 +1,5 @@
+/* General: */
+
 data Identifier where
      Tik()
      Tok(Identifier)
@@ -19,6 +21,19 @@ data Redex where
     RedAnd(Expr, Expr)
     RedOr(Expr, Expr)
 
+cfun Value:asExpr() : Expr :=
+  case ValPosVar(id) => EVar(id)
+  case ValNegVar(id) => ENot(EVar(id))
+  case ValAnd(e1,e2) => EAnd(e1.asExpr(), e2.asExpr())
+  case ValOr(e1,e2)  => EOr(e1.asExpr(), e2.asExpr())
+
+cfun Redex:eval() : Expr :=
+  case RedNot(e)     => e
+  case RedAnd(e1,e2) => EOr(ENot(e1), ENot(e2))
+  case RedOr(e1,e2)  => EAnd(ENot(e1), ENot(e2))
+
+/* Specific to this step: */
+
 data Found where
     FoundValue(Value)
     FoundRedex(Redex)
@@ -35,19 +50,19 @@ cfun Expr:searchNeg(ctx : Value2Found) : Found :=
 cfun Expr:searchPos(ctx : Value2Found) : Found :=
 	 case EVar(n)     => ctx.apply(ValPosVar(n))
 	 case ENot(e)     => e.searchNeg(ctx)
-	 case EAnd(e1,e2) => e1.searchPos( comatch Value2Found:AndCtx1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
-                                                    cocase apply(val1) => e2.searchPos( comatch Value2Found:AndCtx2 using val1 := val1 : Value , ctx := ctx : Value2Found with
+	 case EAnd(e1,e2) => e1.searchPos( comatch Value2Found:AndCnt1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
+                                                    cocase apply(val1) => e2.searchPos( comatch Value2Found:AndCnt2 using val1 := val1 : Value , ctx := ctx : Value2Found with
                                                                                              cocase apply(val2) => ctx.apply(ValAnd(val1, val2))
                                                                                        )
                                           )
-	 case EOr(e1,e2)  => e1.searchPos( comatch Value2Found:OrCtx1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
-                                                    cocase apply(val1) => e2.searchPos( comatch Value2Found:OrCtx4 using val1 := val1 : Value , ctx := ctx : Value2Found with
+	 case EOr(e1,e2)  => e1.searchPos( comatch Value2Found:OrCnt1 using e2 := e2 : Expr, ctx := ctx : Value2Found  with
+                                                    cocase apply(val1) => e2.searchPos( comatch Value2Found:OrCnt2 using val1 := val1 : Value , ctx := ctx : Value2Found with
                                                                                              cocase apply(val2) => ctx.apply(ValOr(val1, val2))
                                                                                        )
                                           )
 
 fun search(e : Expr) : Found :=
-  e.searchPos(comatch Value2Found:EmptyCtx with
+  e.searchPos(comatch Value2Found:BaseCnt with
                     cocase apply(val) => FoundValue(val)
   )
 

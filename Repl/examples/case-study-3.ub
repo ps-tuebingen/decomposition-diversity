@@ -1,0 +1,82 @@
+/* General: */
+
+data Identifier where
+     Tik()
+     Tok(Identifier)
+
+data Expr where
+    EVar(Identifier)
+    ENot(Expr)
+    EAnd(Expr, Expr)
+    EOr(Expr, Expr)
+
+data Value where
+     ValPosVar(Identifier)
+     ValNegVar(Identifier)
+     ValAnd(Value, Value)
+     ValOr(Value, Value)
+
+data Redex where
+    RedNot(Expr)
+    RedAnd(Expr, Expr)
+    RedOr(Expr, Expr)
+
+cfun Value:asExpr() : Expr :=
+  case ValPosVar(id) => EVar(id)
+  case ValNegVar(id) => ENot(EVar(id))
+  case ValAnd(e1,e2) => EAnd(e1.asExpr(), e2.asExpr())
+  case ValOr(e1,e2)  => EOr(e1.asExpr(), e2.asExpr())
+
+cfun Redex:eval() : Expr :=
+  case RedNot(e)     => e
+  case RedAnd(e1,e2) => EOr(ENot(e1), ENot(e2))
+  case RedOr(e1,e2)  => EAnd(ENot(e1), ENot(e2))
+
+/* Specific to this step:         */
+/*                                */
+/* Renaming:                      */
+/* apply         --> findNext     */
+/* Value2Found   --> Context      */
+/* _BaseCnt()    --> EmptyCtx()   */
+/* _AndCnt1(...) --> _AndCtx1()   */
+/* _AndCnt2(...) --> _AndCtx2()   */
+/* _OrCnt1(...)  --> _OrCtx1()    */
+/* _OrCnt1(...)  --> _OrCtx1()    */
+/*                                */
+/* Adding argument to FoundRedex  */
+/*                                */
+/* Modifying searchNeg            */
+
+data Found where
+    FoundValue(Value)
+    FoundRedex(Redex, Context)
+
+data Context where
+   _EmptyCtx()
+   _AndCtx1(Expr , Context)
+   _AndCtx2(Value , Context)
+   _OrCtx1(Expr , Context)
+   _OrCtx2(Value , Context)
+
+cfun Expr:searchNeg(ctx : Context) : Found :=
+	 case EVar(n)     => ctx.findNext(ValNegVar(n))
+	 case ENot(e)     => FoundRedex(RedNot(e), ctx)
+	 case EAnd(e1,e2) => FoundRedex(RedAnd(e1,e2), ctx)
+	 case EOr(e1,e2)  => FoundRedex(RedOr(e1,e2), ctx)
+
+cfun Expr:searchPos(ctx : Context) : Found :=
+   case EVar(id)     => ctx.findNext(ValPosVar(id))
+   case ENot(e)      => e.searchNeg(ctx)
+   case EAnd(e1, e2) => e1.searchPos(_AndCtx1(e2 , ctx))
+   case EOr(e1 , e2) => e1.searchPos(_OrCtx1(e2 , ctx))
+
+
+fun search(e : Expr) : Found :=
+  e.searchPos(EmptyCtx())
+
+cfun Context:findNext(v : Value) : Found :=
+   case _EmptyCtx() => FoundValue(v)
+   case _AndCtx1(e, cnt) => e.searchPos(_AndCtx2(v, cnt))
+   case _AndCtx2(v2, cnt) => cnt.findNext(ValAnd(v2, v))
+   case _OrCtx1(e, cnt) => e.searchPos(_OrCtx2(v, cnt))
+   case _OrCtx2(v2, cnt) => cnt.findNext(ValOr(v2, v))

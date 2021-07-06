@@ -1,0 +1,76 @@
+/* General: */
+
+data Identifier where
+     Tik()
+     Tok(Identifier)
+
+data Expr where
+    EVar(Identifier)
+    ENot(Expr)
+    EAnd(Expr, Expr)
+    EOr(Expr, Expr)
+
+data Value where
+     ValPosVar(Identifier)
+     ValNegVar(Identifier)
+     ValAnd(Value, Value)
+     ValOr(Value, Value)
+
+data Redex where
+    RedNot(Expr)
+    RedAnd(Expr, Expr)
+    RedOr(Expr, Expr)
+
+cfun Value:asExpr() : Expr :=
+  case ValPosVar(id) => EVar(id)
+  case ValNegVar(id) => ENot(EVar(id))
+  case ValAnd(e1,e2) => EAnd(e1.asExpr(), e2.asExpr())
+  case ValOr(e1,e2)  => EOr(e1.asExpr(), e2.asExpr())
+
+cfun Redex:eval() : Expr :=
+  case RedNot(e)     => e
+  case RedAnd(e1,e2) => EOr(ENot(e1), ENot(e2))
+  case RedOr(e1,e2)  => EAnd(ENot(e1), ENot(e2))
+
+/* Specific to this step:         */
+/*                                */
+/* Destructorizing Context        */
+
+data Found where
+    FoundValue(Value)
+    FoundRedex(Redex, Context)
+
+codata Context where
+   findNext(Value) : Found
+   substitute(Expr) : Expr
+
+fun search(e : Expr) : Found :=
+   e.searchPos( comatch Context:EmptyCtx with
+                      cocase findNext(z0) => FoundValue(z0)
+                      cocase substitute(z0) => z0
+   )
+
+cfun Expr:searchNeg(ctx : Context) : Found :=
+	 case EVar(n)     => ctx.findNext(ValNegVar(n))
+	 case ENot(e)     => FoundRedex(RedNot(e), ctx)
+	 case EAnd(e1,e2) => FoundRedex(RedAnd(e1,e2), ctx)
+	 case EOr(e1,e2)  => FoundRedex(RedOr(e1,e2), ctx)
+
+
+cfun Expr:searchPos(x0 : Context) : Found :=
+   case EVar(x1) => x0.findNext(ValPosVar(x1))
+   case ENot(x1) => x1.searchNeg(x0)
+   case EAnd(x1 , x2) => x1.searchPos( comatch Context:AndCtx1 using y0 := x2 : Expr , y1 := x0 : Context with
+                                               cocase findNext(z2) => y0.searchPos( comatch Context:AndCtx2 using z0 := z2 : Value , z1 := y1 : Context with
+                                                                                            cocase findNext(a2) => z1.findNext(ValAnd(z0 , a2))
+                                                                                            cocase substitute(a2) => z1.substitute(EAnd(z0.asExpr() , a2))
+                                                                                  )
+                                               cocase substitute(z2) => y1.substitute(EAnd(z2 , y0))
+                                     )
+   case EOr(x1 , x2) => x1.searchPos( comatch Context:OrCtx1 using y0 := x2 : Expr , y1 := x0 : Context with
+                                            cocase findNext(z2) => y0.searchPos( comatch Context:OrCtx2 using z0 := z2 : Value , z1 := y1 : Context with
+                                                                                     cocase findNext(a2) => z1.findNext(ValOr(z0 , a2))
+                                                                                     cocase substitute(a2) => z1.substitute(EOr(z0.asExpr() , a2))
+                                                                               )
+                                            cocase substitute(z2) => y1.substitute(EOr(z2 , y0))
+                                    )
